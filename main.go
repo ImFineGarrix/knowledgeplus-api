@@ -18,6 +18,7 @@ func main() {
 
 func setupRouter() *gin.Engine {
 	r := gin.Default()
+	r.Use()
 
 	r.GET("ping", func(c *gin.Context) {
 		c.JSON(http.StatusOK, "pong")
