@@ -20,7 +20,9 @@ func setupRouter() *gin.Engine {
 	r := gin.Default()
 	r.Use()
 
-	r.GET("ping", func(c *gin.Context) {
+	defaultPath := r.Group("/api")
+
+	defaultPath.GET("ping", func(c *gin.Context) {
 		c.JSON(http.StatusOK, "pong")
 	})
 
@@ -30,25 +32,24 @@ func setupRouter() *gin.Engine {
 	LevelsRepo := controllers.NewLevelsRepo()
 	CourseRepo := controllers.NewCourseRepo()
 
-	//not test
-	r.POST("/careers", CareerRepo.CreateCareer)
-	r.GET("/careers", CareerRepo.GetCareers)
-	r.GET("/careers/:id", CareerRepo.GetCareer)
-	// r.PUT("/Careers/:id", Repo.UpdateCareer)
-	// r.DELETE("/Careers/:id", Repo.DeleteCareer)
+	defaultPath.POST("/careers", CareerRepo.CreateCareer)
+	defaultPath.GET("/careers", CareerRepo.GetCareers)
+	defaultPath.GET("/careers/:id", CareerRepo.GetCareer)
+	// defaultPath.PUT("/Careers/:id", Repo.UpdateCareer)
+	// defaultPath.DELETE("/Careers/:id", Repo.DeleteCareer)
 
-	r.POST("/categories", CategoriesRepo.CreateCategory)
-	r.GET("/categories", CategoriesRepo.GetCategories)
-	r.GET("/categories/:id", CategoriesRepo.GetCategoryById)
+	defaultPath.POST("/categories", CategoriesRepo.CreateCategory)
+	defaultPath.GET("/categories", CategoriesRepo.GetCategories)
+	defaultPath.GET("/categories/:id", CategoriesRepo.GetCategoryById)
 
-	r.GET("/skills", SkillsRepo.GetSkills)
-	r.GET("/skills/:id", SkillsRepo.GetSkillById)
+	defaultPath.GET("/skills", SkillsRepo.GetSkills)
+	defaultPath.GET("/skills/:id", SkillsRepo.GetSkillById)
 
-	r.GET("/levels", LevelsRepo.GetLevels)
-	r.GET("/levels/:id", LevelsRepo.GetLevelById)
+	defaultPath.GET("/levels", LevelsRepo.GetLevels)
+	defaultPath.GET("/levels/:id", LevelsRepo.GetLevelById)
 
-	r.GET("/courses", CourseRepo.GetCourses)
-	r.GET("/courses/:id", CourseRepo.GetCourse)
+	defaultPath.GET("/courses", CourseRepo.GetCourses)
+	defaultPath.GET("/courses/:id", CourseRepo.GetCourse)
 
 	return r
 }
