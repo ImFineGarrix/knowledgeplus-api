@@ -13,6 +13,10 @@ type Career struct {
 	Categories  []Category `gorm:"many2many:categories_careers;foreignKey:CareerID;joinForeignKey:CareerID;References:CategoryID;joinReferences:CategoryID" json:"categories"`
 }
 
+func (Career) TableName() string {
+	return "Careers"
+}
+
 // GetCareers retrieves all Career records from the database.
 func GetCareers(db *gorm.DB, Careers *[]Career) (err error) {
 	err = db.Preload("Categories").Find(Careers).Error

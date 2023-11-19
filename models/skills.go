@@ -5,18 +5,18 @@ import (
 )
 
 type Skills struct {
-	SkillID     int    `gorm:"column:skill_id;primaryKey"`
-	Label       string `gorm:"column:label;not null"`
-	Value       string `gorm:"column:value;not null"`
-	Description string `gorm:"column:description;default:NULL"`
-	ImageUrl    string `gorm:"column:image_url;default:NULL"`
+	SkillID     int    `gorm:"column:skill_id;primaryKey" json:"skill_id"`
+	Label       string `gorm:"column:label;not null" json:"label"`
+	Value       string `gorm:"column:value;not null" json:" value"`
+	Description string `gorm:"column:description;default:NULL" json:"description"`
+	ImageUrl    string `gorm:"column:image_url;default:NULL" json:"image_url"`
 	LevelID     int
 	Levels      Levels `gorm:"foreignKey:LevelID;references:LevelID"`
 	// Levels     []Level   `gorm:"foreignKey:LevelID"`
 }
 
 func (Skills) TableName() string {
-	return "skills"
+	return "Skills"
 }
 
 type Levels struct {
@@ -25,7 +25,7 @@ type Levels struct {
 }
 
 func (Levels) TableName() string {
-	return "levels"
+	return "Levels"
 }
 
 //   var users []User

@@ -8,6 +8,10 @@ type CareerCategory struct {
 	CategoryID          int `gorm:"foreignKey:CategoryID ;references:CategoryID "`
 }
 
+func (CareerCategory) TableName() string {
+	return "Categories_Careers"
+}
+
 // CreateCareer creates a new Career record in the database.
 func CreateCareerCategory(db *gorm.DB, careerCategory *CareerCategory) (err error) {
 	err = db.Create(careerCategory).Error

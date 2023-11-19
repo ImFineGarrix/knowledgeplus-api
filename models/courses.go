@@ -20,7 +20,7 @@ type Courses struct {
 }
 
 func (Courses) TableName() string {
-	return "courses"
+	return "Courses"
 }
 
 type Organization struct {
@@ -31,7 +31,7 @@ type Organization struct {
 }
 
 func (Organization) TableName() string {
-	return "organizations"
+	return "Organizations"
 }
 
 func GetCourses(db *gorm.DB, Courses *[]Courses) (err error) {
