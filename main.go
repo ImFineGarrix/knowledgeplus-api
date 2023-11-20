@@ -5,6 +5,7 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
+	"github.com/gin-contrib/cors"
 )
 
 // func init() {
@@ -18,7 +19,7 @@ func main() {
 
 func setupRouter() *gin.Engine {
 	r := gin.Default()
-	r.Use()
+	r.Use(cors.Default())
 
 	defaultPath := r.Group("/api")
 
@@ -53,3 +54,7 @@ func setupRouter() *gin.Engine {
 
 	return r
 }
+
+func enableCors(w *http.ResponseWriter) {
+	(*w).Header().Set("Access-Control-Allow-Origin", "*")
+	}
