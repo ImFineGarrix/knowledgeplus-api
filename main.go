@@ -43,6 +43,7 @@ func setupRouter() *gin.Engine {
 	defaultPath.GET("/categories", CategoriesRepo.GetCategories)
 	defaultPath.GET("/categories/:id", CategoriesRepo.GetCategoryById)
 
+	defaultPath.POST("/skills", SkillsRepo.CreateSkill)
 	defaultPath.GET("/skills", SkillsRepo.GetSkills)
 	defaultPath.GET("/skills/:id", SkillsRepo.GetSkillById)
 

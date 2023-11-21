@@ -49,3 +49,22 @@ func (repository *SkillsRepo) GetSkillById(c *gin.Context) {
 	}
 	c.JSON(http.StatusOK, Skills)
 }
+
+// CreateSkill creates a new Skill record.
+func (repository *SkillRepo) CreateSkill(c *gin.Context) {
+	var Skill models.Skill
+	// var CategoriesID = Skill.Categories[0].CategoryID
+	if err := c.ShouldBindJSON(&Skill); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+	// fmt.Println(&Skill)
+	err := models.CreateSkill(repository.Db, &Skill)
+	if err != nil {
+		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err})
+		return
+	}
+	// fmt.Println(Skill.SkillID)
+
+	c.JSON(http.StatusCreated, Skill)
+}

@@ -55,3 +55,14 @@ func GetSkillById(db *gorm.DB, Skill *Skills, id int) (err error) {
 	}
 	return nil
 }
+
+// CreateSkill creates a new Skill record in the database.
+func CreateSkill(db *gorm.DB, skill *Skill) (err error) {
+	// err = db.Omit("Categories").Create(Skill).Error
+	err = db.Create(skill).Error
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
