@@ -6,7 +6,7 @@ import (
 
 type Skills struct {
 	SkillID     int    `gorm:"column:skill_id;primaryKey" json:"skill_id"`
-	Name       string `gorm:"column:name;not null" json:"name"`
+	Name        string `gorm:"column:name;not null" json:"name"`
 	Description string `gorm:"column:description;default:NULL" json:"description"`
 	ImageUrl    string `gorm:"column:image_url;default:NULL" json:"image_url"`
 	LevelID     int
@@ -15,7 +15,7 @@ type Skills struct {
 }
 
 func (Skills) TableName() string {
-	return "Skills"
+	return "skills"
 }
 
 type Levels struct {

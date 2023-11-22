@@ -8,7 +8,7 @@ type Category struct {
 	CategoryID int64     `gorm:"primaryKey;autoIncrement" json:"category_id"`
 	Name       string    `gorm:"not null" json:"name"`
 	ImageUrl   string    `gorm:"default:NULL" json:"image_url"`
-	Careers    []Careers `gorm:"many2many:Categories_Careers;foreignKey:CategoryID;joinForeignKey:CategoryID;References:CareerID;joinReferences:CareerID"`
+	Careers    []Careers `gorm:"many2many:categories_careers;foreignKey:CategoryID;joinForeignKey:CategoryID;References:CareerID;joinReferences:CareerID"`
 }
 
 type Careers struct {
@@ -19,7 +19,7 @@ type Careers struct {
 }
 
 func (Category) TableName() string {
-	return "Categories"
+	return "categories"
 }
 
 // GetCategories retrieves all Category records from the database.

@@ -9,7 +9,7 @@ type Career struct {
 	Name        string       `gorm:"not null" json:"name"`
 	Description string       `gorm:"default:NULL" json:"description"`
 	ShortDesc   string       `gorm:"default:NULL" json:"short_desc"`
-	Categories  []Categories `gorm:"many2many:Categories_Careers;foreignKey:CareerID;joinForeignKey:CareerID;References:CategoryID;joinReferences:CategoryID" json:"categories"`
+	Categories  []Categories `gorm:"many2many:categories_careers;foreignKey:CareerID;joinForeignKey:CareerID;References:CategoryID;joinReferences:CategoryID" json:"categories"`
 }
 
 type Categories struct {
@@ -19,7 +19,7 @@ type Categories struct {
 }
 
 func (Career) TableName() string {
-	return "Careers"
+	return "careers"
 }
 
 // GetCareers retrieves all Career records from the database.

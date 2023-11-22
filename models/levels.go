@@ -10,7 +10,7 @@ type Level struct {
 }
 
 func (Level) TableName() string {
-	return "Levels"
+	return "levels"
 }
 
 // GetLevels retrieves all Level records from the database.

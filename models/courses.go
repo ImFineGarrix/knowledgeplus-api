@@ -8,7 +8,7 @@ import (
 
 type Courses struct {
 	CourseID       int    `gorm:"column:course_id;primaryKey"`
-	Name          string `gorm:"column:name;not null"`
+	Name           string `gorm:"column:name;not null"`
 	Description    string `gorm:"column:description;default:NULL"`
 	CourseLevel    string `gorm:"column:course_level;default:NULL"`
 	LearnHours     string `gorm:"column:learn_hours;default:NULL"`
@@ -30,12 +30,12 @@ type Organization struct {
 }
 
 func (Organization) TableName() string {
-	return "Organizations"
+	return "organizations"
 }
 
 func GetCourses(db *gorm.DB, Courses *[]Courses) (err error) {
 	fmt.Println(db.Preload("Organizations").Find(Courses).Statement)
-	err = db.Preload("Organizations").Find(Courses).Error
+	err = db.Preload("Organization").Find(Courses).Error
 	if err != nil {
 		return err
 	}
@@ -43,7 +43,7 @@ func GetCourses(db *gorm.DB, Courses *[]Courses) (err error) {
 }
 
 func GetCourseById(db *gorm.DB, Course *Courses, id int) (err error) {
-	err = db.Where("Course_id = ?", id).Preload("Organizations").First(Course).Error
+	err = db.Where("Course_id = ?", id).Preload("Organization").First(Course).Error
 	if err != nil {
 		return err
 	}

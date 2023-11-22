@@ -7,7 +7,7 @@ type CareerCategory struct {
 }
 
 func (CareerCategory) TableName() string {
-	return "Categories_Careers"
+	return "categories_careers"
 }
 
 // // CreateCareer creates a new Career record in the database.
