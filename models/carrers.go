@@ -5,11 +5,17 @@ import (
 )
 
 type Career struct {
-	CareerID    int        `gorm:"primaryKey;autoIncrement" json:"career_id"`
-	Name        string     `gorm:"not null" json:"name"`
-	Description string     `gorm:"default:NULL" json:"description"`
-	ShortDesc   string     `gorm:"default:NULL" json:"short_desc"`
-	Categories  []Category `gorm:"many2many:Categories_Careers;foreignKey:CareerID;joinForeignKey:CareerID;References:CategoryID;joinReferences:CategoryID" json:"categories"`
+	CareerID    int          `gorm:"primaryKey;autoIncrement" json:"career_id"`
+	Name        string       `gorm:"not null" json:"name"`
+	Description string       `gorm:"default:NULL" json:"description"`
+	ShortDesc   string       `gorm:"default:NULL" json:"short_desc"`
+	Categories  []Categories `gorm:"many2many:Categories_Careers;foreignKey:CareerID;joinForeignKey:CareerID;References:CategoryID;joinReferences:CategoryID" json:"categories"`
+}
+
+type Categories struct {
+	CategoryID int    `gorm:"primaryKey" json:"category_id"`
+	Name       string `gorm:"not null" json:"name"`
+	ImageUrl   string `gorm:"default:NULL" json:"image_url"`
 }
 
 func (Career) TableName() string {
