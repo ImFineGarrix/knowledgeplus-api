@@ -6,9 +6,9 @@ import (
 
 type Category struct {
 	CategoryID int      `gorm:"primaryKey" json:"category_id"`
-	Name      string   `gorm:"not null" json:"name"`
+	Name       string   `gorm:"not null" json:"name"`
 	ImageUrl   string   `gorm:"default:NULL" json:"image_url"`
-	Careers    []Career `gorm:"many2many:categories_careers;foreignKey:CategoryID;joinForeignKey:CategoryID;References:CareerID;joinReferences:CareerID"`
+	Careers    []Career `gorm:"many2many:Categories_Careers;foreignKey:CategoryID;joinForeignKey:CategoryID;References:CareerID;joinReferences:CareerID"`
 }
 
 func (Category) TableName() string {

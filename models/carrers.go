@@ -6,10 +6,10 @@ import (
 
 type Career struct {
 	CareerID    int        `gorm:"primaryKey;autoIncrement" json:"career_id"`
-	Name       string     `gorm:"not null" json:"name"`
+	Name        string     `gorm:"not null" json:"name"`
 	Description string     `gorm:"default:NULL" json:"description"`
 	ShortDesc   string     `gorm:"default:NULL" json:"short_desc"`
-	Categories  []Category `gorm:"many2many:categories_careers;foreignKey:CareerID;joinForeignKey:CareerID;References:CategoryID;joinReferences:CategoryID" json:"categories"`
+	Categories  []Category `gorm:"many2many:Categories_Careers;foreignKey:CareerID;joinForeignKey:CareerID;References:CategoryID;joinReferences:CategoryID" json:"categories"`
 }
 
 func (Career) TableName() string {
