@@ -5,14 +5,14 @@ import (
 )
 
 type Category struct {
-	CategoryID int       `gorm:"primaryKey" json:"category_id"`
+	CategoryID int64     `gorm:"primaryKey;autoIncrement" json:"category_id"`
 	Name       string    `gorm:"not null" json:"name"`
 	ImageUrl   string    `gorm:"default:NULL" json:"image_url"`
 	Careers    []Careers `gorm:"many2many:Categories_Careers;foreignKey:CategoryID;joinForeignKey:CategoryID;References:CareerID;joinReferences:CareerID"`
 }
 
 type Careers struct {
-	CareerID    int    `gorm:"primaryKey;autoIncrement" json:"career_id"`
+	CareerID    int64  `gorm:"primaryKey" json:"career_id"`
 	Name        string `gorm:"not null" json:"name"`
 	Description string `gorm:"default:NULL" json:"description"`
 	ShortDesc   string `gorm:"default:NULL" json:"short_desc"`
