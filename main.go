@@ -5,7 +5,6 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
-	"github.com/gin-contrib/cors"
 )
 
 // func init() {
@@ -19,7 +18,7 @@ func main() {
 
 func setupRouter() *gin.Engine {
 	r := gin.Default()
-	r.Use(cors.Default())
+	r.Use(corsMiddleware())
 
 	defaultPath := r.Group("/api")
 
@@ -43,6 +42,7 @@ func setupRouter() *gin.Engine {
 	defaultPath.GET("/categories", CategoriesRepo.GetCategories)
 	defaultPath.GET("/categories/:id", CategoriesRepo.GetCategoryById)
 
+	defaultPath.POST("/skills", SkillsRepo.CreateSkill)
 	defaultPath.GET("/skills", SkillsRepo.GetSkills)
 	defaultPath.GET("/skills/:id", SkillsRepo.GetSkillById)
 
@@ -53,4 +53,19 @@ func setupRouter() *gin.Engine {
 	defaultPath.GET("/courses/:id", CourseRepo.GetCourse)
 
 	return r
+}
+
+func corsMiddleware() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		c.Writer.Header().Set("Access-Control-Allow-Origin", "*")
+		c.Writer.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE")
+		c.Writer.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
+
+		if c.Request.Method == "OPTIONS" {
+			c.AbortWithStatus(204)
+			return
+		}
+
+		c.Next()
+	}
 }

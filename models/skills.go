@@ -6,8 +6,7 @@ import (
 
 type Skills struct {
 	SkillID     int    `gorm:"column:skill_id;primaryKey" json:"skill_id"`
-	Label       string `gorm:"column:label;not null" json:"label"`
-	Value       string `gorm:"column:value;not null" json:" value"`
+	Name       string `gorm:"column:name;not null" json:"name"`
 	Description string `gorm:"column:description;default:NULL" json:"description"`
 	ImageUrl    string `gorm:"column:image_url;default:NULL" json:"image_url"`
 	LevelID     int
@@ -53,5 +52,16 @@ func GetSkillById(db *gorm.DB, Skill *Skills, id int) (err error) {
 	if err != nil {
 		return err
 	}
+	return nil
+}
+
+// CreateSkill creates a new Skill record in the database.
+func CreateSkill(db *gorm.DB, skill *Skills) (err error) {
+	// err = db.Omit("Categories").Create(Skill).Error
+	err = db.Create(skill).Error
+	if err != nil {
+		return err
+	}
+
 	return nil
 }
