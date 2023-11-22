@@ -8,8 +8,7 @@ import (
 
 type Courses struct {
 	CourseID       int    `gorm:"column:course_id;primaryKey"`
-	Label          string `gorm:"column:label;not null"`
-	Value          string `gorm:"column:value;not null"`
+	Name          string `gorm:"column:name;not null"`
 	Description    string `gorm:"column:description;default:NULL"`
 	CourseLevel    string `gorm:"column:course_level;default:NULL"`
 	LearnHours     string `gorm:"column:learn_hours;default:NULL"`

@@ -51,8 +51,8 @@ func (repository *SkillsRepo) GetSkillById(c *gin.Context) {
 }
 
 // CreateSkill creates a new Skill record.
-func (repository *SkillRepo) CreateSkill(c *gin.Context) {
-	var Skill models.Skill
+func (repository *SkillsRepo) CreateSkill(c *gin.Context) {
+	var Skill models.Skills
 	// var CategoriesID = Skill.Categories[0].CategoryID
 	if err := c.ShouldBindJSON(&Skill); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})

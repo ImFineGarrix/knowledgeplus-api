@@ -6,8 +6,7 @@ import (
 
 type Career struct {
 	CareerID    int        `gorm:"primaryKey;autoIncrement" json:"career_id"`
-	Label       string     `gorm:"not null" json:"label"`
-	Value       string     `gorm:"not null" json:"value"`
+	Name       string     `gorm:"not null" json:"name"`
 	Description string     `gorm:"default:NULL" json:"description"`
 	ShortDesc   string     `gorm:"default:NULL" json:"short_desc"`
 	Categories  []Category `gorm:"many2many:categories_careers;foreignKey:CareerID;joinForeignKey:CareerID;References:CategoryID;joinReferences:CategoryID" json:"categories"`

@@ -6,8 +6,7 @@ import (
 
 type Category struct {
 	CategoryID int      `gorm:"primaryKey" json:"category_id"`
-	Label      string   `gorm:"not null" json:"label"`
-	Value      string   `gorm:"not null" json:"value"`
+	Name      string   `gorm:"not null" json:"name"`
 	ImageUrl   string   `gorm:"default:NULL" json:"image_url"`
 	Careers    []Career `gorm:"many2many:categories_careers;foreignKey:CategoryID;joinForeignKey:CategoryID;References:CareerID;joinReferences:CareerID"`
 }
