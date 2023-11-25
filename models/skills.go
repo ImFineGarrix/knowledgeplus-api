@@ -9,7 +9,7 @@ type Skills struct {
 	Name        string `gorm:"column:name;not null" json:"name"`
 	Description string `gorm:"column:description;default:NULL" json:"description"`
 	ImageUrl    string `gorm:"column:image_url;default:NULL" json:"image_url"`
-	LevelID     int
+	LevelID     int    `json:"-"`
 	Levels      Levels `gorm:"foreignKey:LevelID;references:LevelID"`
 	// Levels     []Level   `gorm:"foreignKey:LevelID"`
 }
@@ -27,19 +27,9 @@ func (Levels) TableName() string {
 	return "Levels"
 }
 
-//   var users []User
-//   err := db.Model(&User{}).Preload("CreditCard").Find(&users).Error
-//   return users, err
-
 // GetSkills retrieves all Skill records from the database.
 func GetSkills(db *gorm.DB, skills *[]Skills) error {
 	err := db.Model(&Skills{}).Preload("Levels").Find(&skills).Error
-	// err := db.
-	// Table("skills s").
-	// Select("s.skill_id, s.label, s.value, s.description, s.image_url, l.level_id, l.name").
-	// Joins("LEFT JOIN levels l ON s.level_id = l.level_id").
-	// Find(&skills).
-	// Error
 	if err != nil {
 		return err
 	}
@@ -63,5 +53,23 @@ func CreateSkill(db *gorm.DB, skill *Skills) (err error) {
 		return err
 	}
 
+	return nil
+}
+
+// UpdateSkill updates a Skill record by ID.
+func UpdateSkill(db *gorm.DB, skill *Skills) (err error) {
+	err = db.Save(skill).Error
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+// DeleteSkillById deletes a Skill record by its ID from the database.
+func DeleteSkillById(db *gorm.DB, id int) (err error) {
+	err = db.Where("skill_id = ?", id).Delete(&Skills{}).Error
+	if err != nil {
+		return err
+	}
 	return nil
 }

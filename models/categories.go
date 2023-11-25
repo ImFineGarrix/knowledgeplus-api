@@ -49,3 +49,21 @@ func CreateCategory(db *gorm.DB, category *Category) (err error) {
 
 	return nil
 }
+
+// UpdateCategory updates a Category record by ID.
+func UpdateCategory(db *gorm.DB, category *Category) (err error) {
+	err = db.Save(category).Error
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+// DeleteCategoryById deletes a Category record by its ID from the database.
+func DeleteCategoryById(db *gorm.DB, id int) (err error) {
+	err = db.Where("category_id = ?", id).Delete(&Category{}).Error
+	if err != nil {
+		return err
+	}
+	return nil
+}
