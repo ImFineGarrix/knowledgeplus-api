@@ -6,9 +6,9 @@ import (
 
 type Career struct {
 	CareerID    int64        `gorm:"primaryKey;autoIncrement" json:"career_id"`
-	Name        string       `gorm:"not null" json:"name"`
-	Description string       `gorm:"default:NULL" json:"description"`
-	ShortDesc   string       `gorm:"default:NULL" json:"short_desc"`
+	Name        string       `gorm:"not null" json:"name" binding:"required,len=45"`
+	Description string       `gorm:"default:NULL" json:"description" binding:"len=255"`
+	ShortDesc   string       `gorm:"default:NULL" json:"short_desc" binding:"len=50"`
 	Categories  []Categories `gorm:"many2many:categories_careers;foreignKey:CareerID;joinForeignKey:CareerID;References:CategoryID;joinReferences:CategoryID" json:"categories"`
 }
 
@@ -48,5 +48,23 @@ func CreateCareer(db *gorm.DB, career *Career) (err error) {
 		return err
 	}
 
+	return nil
+}
+
+// UpdateCareer updates a Career record in the database.
+func UpdateCareer(db *gorm.DB, career *Career) (err error) {
+	err = db.Save(career).Error
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+// DeleteCareerById deletes a Career by its ID from the database.
+func DeleteCareerById(db *gorm.DB, id int) (err error) {
+	err = db.Where("career_id = ?", id).Delete(&Career{}).Error
+	if err != nil {
+		return err
+	}
 	return nil
 }

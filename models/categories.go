@@ -6,8 +6,8 @@ import (
 
 type Category struct {
 	CategoryID int64     `gorm:"primaryKey;autoIncrement" json:"category_id"`
-	Name       string    `gorm:"not null" json:"name"`
-	ImageUrl   string    `gorm:"default:NULL" json:"image_url"`
+	Name       string    `gorm:"not null" json:"name" binding:"required,len=45"`
+	ImageUrl   string    `gorm:"default:NULL" json:"image_url" binding:"len=255"`
 	Careers    []Careers `gorm:"many2many:categories_careers;foreignKey:CategoryID;joinForeignKey:CategoryID;References:CareerID;joinReferences:CareerID"`
 }
 
@@ -47,5 +47,23 @@ func CreateCategory(db *gorm.DB, category *Category) (err error) {
 		return err
 	}
 
+	return nil
+}
+
+// UpdateCategory updates a Category record by ID.
+func UpdateCategory(db *gorm.DB, category *Category) (err error) {
+	err = db.Save(category).Error
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+// DeleteCategoryById deletes a Category record by its ID from the database.
+func DeleteCategoryById(db *gorm.DB, id int) (err error) {
+	err = db.Where("category_id = ?", id).Delete(&Category{}).Error
+	if err != nil {
+		return err
+	}
 	return nil
 }
