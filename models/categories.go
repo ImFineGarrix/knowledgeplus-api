@@ -6,8 +6,8 @@ import (
 
 type Category struct {
 	CategoryID int64     `gorm:"primaryKey;autoIncrement" json:"category_id"`
-	Name       string    `gorm:"not null" json:"name"`
-	ImageUrl   string    `gorm:"default:NULL" json:"image_url"`
+	Name       string    `gorm:"not null" json:"name" binding:"required,len=45"`
+	ImageUrl   string    `gorm:"default:NULL" json:"image_url" binding:"len=255"`
 	Careers    []Careers `gorm:"many2many:categories_careers;foreignKey:CategoryID;joinForeignKey:CategoryID;References:CareerID;joinReferences:CareerID"`
 }
 

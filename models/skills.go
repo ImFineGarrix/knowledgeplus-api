@@ -6,9 +6,9 @@ import (
 
 type Skills struct {
 	SkillID     int    `gorm:"column:skill_id;primaryKey" json:"skill_id"`
-	Name        string `gorm:"column:name;not null" json:"name"`
-	Description string `gorm:"column:description;default:NULL" json:"description"`
-	ImageUrl    string `gorm:"column:image_url;default:NULL" json:"image_url"`
+	Name        string `gorm:"column:name;not null" json:"name" binding:"required,len=45"`
+	Description string `gorm:"column:description;default:NULL" json:"description" binding:"len=200"`
+	ImageUrl    string `gorm:"column:image_url;default:NULL" json:"image_url" binding:"len=255"`
 	LevelID     int    `json:"-"`
 	Levels      Levels `gorm:"foreignKey:LevelID;references:LevelID"`
 	// Levels     []Level   `gorm:"foreignKey:LevelID"`
