@@ -21,16 +21,87 @@ func NewCareerRepo() *CareerRepo {
 	return &CareerRepo{Db: db}
 }
 
-// get Careers
+// // get Careers
+// func (repository *CareerRepo) GetCareers(c *gin.Context) {
+// 	var Career []models.Career
+// 	print(Career)
+// 	err := models.GetCareers(repository.Db, &Career)
+// 	if err != nil {
+// 		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err})
+// 		return
+// 	}
+// 	c.JSON(http.StatusOK, Career)
+// }
+
+// func (repository *CareerRepo) GetCareersWithHaveCategories(c *gin.Context) {
+// 	var Career []models.Career
+// 	print(Career)
+// 	err := models.GetCareersWithHaveCategories(repository.Db, &Career)
+// 	if err != nil {
+// 		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err})
+// 		return
+// 	}
+// 	c.JSON(http.StatusOK, Career)
+// }
+
+// get Careers with pagination
 func (repository *CareerRepo) GetCareers(c *gin.Context) {
-	var Career []models.Career
-	print(Career)
-	err := models.GetCareers(repository.Db, &Career)
+	var (
+		careers    []models.Career
+		pagination models.Pagination
+		err        error
+	)
+
+	page, err := strconv.Atoi(c.Query("page"))
+	if err != nil || page <= 0 {
+		page = 1
+	}
+
+	limit, err := strconv.Atoi(c.Query("limit"))
+	if err != nil || limit <= 0 {
+		limit = 10 // set a default limit
+	}
+
+	careers, pagination, err = models.GetCareers(repository.Db, page, limit)
 	if err != nil {
-		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err})
+		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
-	c.JSON(http.StatusOK, Career)
+
+	c.JSON(http.StatusOK, gin.H{
+		"careers":    careers,
+		"pagination": pagination,
+	})
+}
+
+// get Careers with categories and pagination
+func (repository *CareerRepo) GetCareersWithHaveCategories(c *gin.Context) {
+	var (
+		careers    []models.Career
+		pagination models.Pagination
+		err        error
+	)
+
+	page, err := strconv.Atoi(c.Query("page"))
+	if err != nil || page <= 0 {
+		page = 1
+	}
+
+	limit, err := strconv.Atoi(c.Query("limit"))
+	if err != nil || limit <= 0 {
+		limit = 10 // set a default limit
+	}
+
+	careers, pagination, err = models.GetCareersWithHaveCategories(repository.Db, page, limit)
+	if err != nil {
+		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"careers":    careers,
+		"pagination": pagination,
+	})
 }
 
 // get Career by id
@@ -74,13 +145,12 @@ func (repository *CareerRepo) UpdateCareer(c *gin.Context) {
 	id, _ := strconv.Atoi(c.Param("id"))
 	var existingCareer models.Career
 
-	err := repository.Db.First(&existingCareer, id).Error
+	err := repository.Db.Preload("Categories").Preload("Skills").First(&existingCareer, id).Error
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			c.AbortWithStatus(http.StatusNotFound)
+			c.AbortWithStatusJSON(http.StatusNotFound, gin.H{"error": "Record not found!"})
 			return
 		}
-
 		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err})
 		return
 	}
@@ -95,8 +165,10 @@ func (repository *CareerRepo) UpdateCareer(c *gin.Context) {
 	existingCareer.Name = updatedCareer.Name
 	existingCareer.Description = updatedCareer.Description
 	existingCareer.ShortDesc = updatedCareer.ShortDesc
+	existingCareer.Categories = updatedCareer.Categories
+	existingCareer.Skills = updatedCareer.Skills
 
-	err = repository.Db.Save(&existingCareer).Error
+	err = models.UpdateCareer(repository.Db, &existingCareer)
 	if err != nil {
 		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err})
 		return
@@ -114,7 +186,7 @@ func (repository *CareerRepo) DeleteCareer(c *gin.Context) {
 	err := repository.Db.Where("career_id = ?", id).First(&career).Error
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			c.AbortWithStatus(http.StatusNotFound)
+			c.AbortWithStatusJSON(http.StatusNotFound, gin.H{"error": "Record not found!"})
 			return
 		}
 

@@ -17,25 +17,54 @@ type SkillRepo struct {
 
 func NewSkillRepo() *SkillRepo {
 	db := database.InitDb()
-	db.AutoMigrate(&models.Skills{}, &models.Levels{})
+	db.AutoMigrate(&models.Skill{}, &models.Levels{})
 	return &SkillRepo{Db: db}
 }
 
-// get Skillss
+// // get Skillss
+// func (repository *SkillRepo) GetSkills(c *gin.Context) {
+// 	var Skills []models.Skill
+// 	err := models.GetSkills(repository.Db, &Skills)
+// 	if err != nil {
+// 		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err})
+// 		return
+// 	}
+// 	c.JSON(http.StatusOK, Skills)
+// }
+
+// GetSkills retrieves all Skill records from the database.
 func (repository *SkillRepo) GetSkills(c *gin.Context) {
-	var Skills []models.Skills
-	err := models.GetSkills(repository.Db, &Skills)
+	var (
+		skills     []models.Skill
+		pagination models.Pagination
+	)
+
+	page, err := strconv.Atoi(c.Query("page"))
+	if err != nil || page <= 0 {
+		page = 1
+	}
+
+	limit, err := strconv.Atoi(c.Query("limit"))
+	if err != nil || limit <= 0 {
+		limit = 10 // set a default limit
+	}
+
+	pagination, err = models.GetSkills(repository.Db, page, limit, &skills)
 	if err != nil {
 		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err})
 		return
 	}
-	c.JSON(http.StatusOK, Skills)
+
+	c.JSON(http.StatusOK, gin.H{
+		"skills":     skills,
+		"pagination": pagination,
+	})
 }
 
 // get Skills by id
 func (repository *SkillRepo) GetSkillById(c *gin.Context) {
 	id, _ := strconv.Atoi(c.Param("id"))
-	var Skills models.Skills
+	var Skills models.Skill
 	err := models.GetSkillById(repository.Db, &Skills, id)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
@@ -51,7 +80,7 @@ func (repository *SkillRepo) GetSkillById(c *gin.Context) {
 
 // CreateSkill creates a new Skill record.
 func (repository *SkillRepo) CreateSkill(c *gin.Context) {
-	var Skill models.Skills
+	var Skill models.Skill
 	// var CategoriesID = Skill.Categories[0].CategoryID
 	if err := c.ShouldBindJSON(&Skill); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
@@ -71,12 +100,12 @@ func (repository *SkillRepo) CreateSkill(c *gin.Context) {
 // UpdateSkill updates a Skill record by ID.
 func (repository *SkillRepo) UpdateSkill(c *gin.Context) {
 	id, _ := strconv.Atoi(c.Param("id"))
-	var existingSkill models.Skills
+	var existingSkill models.Skill
 
 	err := repository.Db.Preload("Levels").First(&existingSkill, id).Error
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			c.AbortWithStatus(http.StatusNotFound)
+			c.AbortWithStatusJSON(http.StatusNotFound, gin.H{"error": "Record not found!"})
 			return
 		}
 
@@ -84,7 +113,7 @@ func (repository *SkillRepo) UpdateSkill(c *gin.Context) {
 		return
 	}
 
-	var updatedSkill models.Skills
+	var updatedSkill models.Skill
 	if err := c.ShouldBindJSON(&updatedSkill); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
@@ -108,12 +137,12 @@ func (repository *SkillRepo) UpdateSkill(c *gin.Context) {
 // DeleteSkillById deletes a Skill record by ID.
 func (repository *SkillRepo) DeleteSkillById(c *gin.Context) {
 	id, _ := strconv.Atoi(c.Param("id"))
-	var skill models.Skills
+	var skill models.Skill
 
 	err := repository.Db.Where("skill_id = ?", id).Preload("Levels").First(&skill).Error
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			c.AbortWithStatus(http.StatusNotFound)
+			c.AbortWithStatusJSON(http.StatusNotFound, gin.H{"error": "Record not found!"})
 			return
 		}
 

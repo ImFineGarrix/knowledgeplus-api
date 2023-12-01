@@ -73,7 +73,7 @@ func (repository *CategoriesRepo) UpdateCategory(c *gin.Context) {
 	err := repository.Db.First(&existingCategory, id).Error
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			c.AbortWithStatus(http.StatusNotFound)
+			c.AbortWithStatusJSON(http.StatusNotFound, gin.H{"error": "Record not found!"})
 			return
 		}
 
@@ -108,7 +108,7 @@ func (repository *CategoriesRepo) DeleteCategoryById(c *gin.Context) {
 	err := repository.Db.Where("category_id = ?", id).First(&category).Error
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			c.AbortWithStatus(http.StatusNotFound)
+			c.AbortWithStatusJSON(http.StatusNotFound, gin.H{"error": "Record not found!"})
 			return
 		}
 

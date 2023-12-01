@@ -20,7 +20,7 @@ func main() {
 func setupRouter() *gin.Engine {
 	r := gin.Default()
 	config := cors.DefaultConfig()
-	config.AllowOrigins = []string{"http://localhost:3000", "https://cp23sj2.sit.kmutt.ac.th:3000", "http://cp23sj2.sit.kmutt.ac.th:3000"} // Update with your frontend's origin
+	config.AllowOrigins = []string{"http://localhost:3000", "https://cp23sj2.sit.kmutt.ac.th:3000", "http://cp23sj2.sit.kmutt.ac.th:3001", "http://localhost:3001", "https://cp23sj2.sit.kmutt.ac.th:3001", "http://cp23sj2.sit.kmutt.ac.th:3001"} // Update with your frontend's origin
 	r.Use(cors.New(config))
 	// r.Use(corsMiddleware())
 
@@ -38,6 +38,7 @@ func setupRouter() *gin.Engine {
 
 	defaultPath.POST("/careers", CareerRepo.CreateCareer)
 	defaultPath.GET("/careers", CareerRepo.GetCareers)
+	defaultPath.GET("/careers_have_categories", CareerRepo.GetCareersWithHaveCategories)
 	defaultPath.GET("/careers/:id", CareerRepo.GetCareer)
 	defaultPath.PUT("/careers/:id", CareerRepo.UpdateCareer)
 	defaultPath.DELETE("/careers/:id", CareerRepo.DeleteCareer)
