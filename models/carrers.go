@@ -122,34 +122,64 @@ func CreateCareer(db *gorm.DB, career *Career) (err error) {
 	return nil
 }
 
-// UpdateCareer updates a Career record in the database.
+// UpdateCareer updates an existing Career record in the database.
 func UpdateCareer(db *gorm.DB, career *Career) (err error) {
-	// Start a transaction
+	existingCareer := &Career{}
+
+	// Begin a transaction
 	tx := db.Begin()
-	if tx.Error != nil {
-		return tx.Error
-	}
+	defer func() {
+		if r := recover(); r != nil {
+			tx.Rollback()
+		}
+	}()
 
-	// Update the main career information
-	if err := tx.Save(career).Error; err != nil {
+	// Check if the career record exists
+	err = tx.Where("career_id = ?", career.CareerID).Preload("Categories").Preload("Skills.Levels").First(existingCareer).Error
+	if err != nil {
 		tx.Rollback()
 		return err
 	}
 
-	// Update the associated categories
-	if err := tx.Model(career).Association("Categories").Replace(career.Categories); err != nil {
+	// Update the fields of the existing career record
+	existingCareer.Name = career.Name
+	existingCareer.Description = career.Description
+	existingCareer.ShortDesc = career.ShortDesc
+
+	// Clear existing associations within the transaction
+	err = tx.Model(existingCareer).Association("Categories").Clear()
+	if err != nil {
 		tx.Rollback()
 		return err
 	}
 
-	// Update the associated skills
-	if err := tx.Model(career).Association("Skills").Replace(career.Skills); err != nil {
+	err = tx.Model(existingCareer).Association("Skills").Clear()
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	// Replace existing categories with new ones
+	err = tx.Model(existingCareer).Association("Categories").Replace(career.Categories)
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	// Replace existing skills with new ones
+	err = tx.Model(existingCareer).Association("Skills").Replace(career.Skills)
+	if err != nil {
 		tx.Rollback()
 		return err
 	}
 
 	// Commit the transaction
-	return tx.Commit().Error
+	err = tx.Commit().Error
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 // DeleteCareerById deletes a Career by its ID from the database.

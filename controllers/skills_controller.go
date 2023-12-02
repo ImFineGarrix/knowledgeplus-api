@@ -21,17 +21,6 @@ func NewSkillRepo() *SkillRepo {
 	return &SkillRepo{Db: db}
 }
 
-// // get Skillss
-// func (repository *SkillRepo) GetSkills(c *gin.Context) {
-// 	var Skills []models.Skill
-// 	err := models.GetSkills(repository.Db, &Skills)
-// 	if err != nil {
-// 		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err})
-// 		return
-// 	}
-// 	c.JSON(http.StatusOK, Skills)
-// }
-
 // GetSkills retrieves all Skill records from the database.
 func (repository *SkillRepo) GetSkills(c *gin.Context) {
 	var (

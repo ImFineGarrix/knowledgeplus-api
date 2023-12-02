@@ -143,38 +143,34 @@ func (repository *CareerRepo) CreateCareer(c *gin.Context) {
 // UpdateCareer updates a Career record by ID.
 func (repository *CareerRepo) UpdateCareer(c *gin.Context) {
 	id, _ := strconv.Atoi(c.Param("id"))
-	var existingCareer models.Career
+	var updatedCareer models.Career
 
-	err := repository.Db.Preload("Categories").Preload("Skills").First(&existingCareer, id).Error
+	// Check if the career record exists
+	err := models.GetCareerById(repository.Db, &updatedCareer, id)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			c.AbortWithStatusJSON(http.StatusNotFound, gin.H{"error": "Record not found!"})
 			return
 		}
+
 		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err})
 		return
 	}
 
-	var updatedCareer models.Career
+	// Bind the updated data from the request
 	if err := c.ShouldBindJSON(&updatedCareer); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
-	// Update only the fields you want to change
-	existingCareer.Name = updatedCareer.Name
-	existingCareer.Description = updatedCareer.Description
-	existingCareer.ShortDesc = updatedCareer.ShortDesc
-	existingCareer.Categories = updatedCareer.Categories
-	existingCareer.Skills = updatedCareer.Skills
-
-	err = models.UpdateCareer(repository.Db, &existingCareer)
+	// Update the career record
+	err = models.UpdateCareer(repository.Db, &updatedCareer)
 	if err != nil {
 		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err})
 		return
 	}
 
-	c.JSON(http.StatusOK, existingCareer)
+	c.JSON(http.StatusOK, updatedCareer)
 }
 
 // DeleteCareer deletes a Career record by ID.

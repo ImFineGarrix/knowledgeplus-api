@@ -9,8 +9,8 @@ type Skill struct {
 	Name        string    `gorm:"column:name;not null" json:"name" binding:"max=45"`
 	Description string    `gorm:"column:description;default:NULL" json:"description" binding:"max=200"`
 	ImageUrl    string    `gorm:"column:image_url;default:NULL" json:"image_url" binding:"max=255"`
-	LevelID     int       `json:"-"`
-	Levels      Levels    `gorm:"foreignKey:LevelID;references:LevelID" json:"levels"`
+	LevelID     int       `json:"level_id"`
+	Levels      Levels    `gorm:"foreignKey:LevelID;references:LevelID" json:"-"`
 	Careers     []Careers `gorm:"many2many:careers_skills;foreignKey:SkillID;joinForeignKey:SkillID;References:CareerID;joinReferences:CareerID" json:"-"`
 	// Levels     []Level   `gorm:"foreignKey:LevelID"`
 }
