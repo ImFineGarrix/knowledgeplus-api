@@ -10,7 +10,7 @@ type Skill struct {
 	Description string    `gorm:"column:description;default:NULL" json:"description" binding:"max=200"`
 	ImageUrl    string    `gorm:"column:image_url;default:NULL" json:"image_url" binding:"max=255"`
 	LevelID     int       `json:"-"`
-	Levels      Levels    `gorm:"foreignKey:LevelID;references:LevelID"`
+	Levels      Levels    `gorm:"foreignKey:LevelID;references:LevelID" json:"levels"`
 	Careers     []Careers `gorm:"many2many:careers_skills;foreignKey:SkillID;joinForeignKey:SkillID;References:CareerID;joinReferences:CareerID" json:"-"`
 	// Levels     []Level   `gorm:"foreignKey:LevelID"`
 }
@@ -20,8 +20,8 @@ func (Skill) Tablename() string {
 }
 
 type Levels struct {
-	LevelID int    `gorm:"column:level_id;primaryKey"`
-	Name    string `gorm:"column:name;not null"`
+	LevelID int    `gorm:"column:level_id;primaryKey" json:"level_id"`
+	Name    string `gorm:"column:name;not null" json:"name"`
 }
 
 func (Levels) Tablename() string {
@@ -44,7 +44,7 @@ func GetSkills(db *gorm.DB, page, limit int, skills *[]Skill) (pagination Pagina
 		return Pagination{}, err
 	}
 
-	totalPages := (int(totalCount) / limit) + 1
+	totalPages := (int(totalCount) / limit)
 
 	pagination = Pagination{
 		Page:  page,
