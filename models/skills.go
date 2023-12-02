@@ -44,11 +44,11 @@ func GetSkills(db *gorm.DB, page, limit int, skills *[]Skill) (pagination Pagina
 		return Pagination{}, err
 	}
 
-	totalPages := (int(totalCount) / limit)
+	totalPages := int(totalCount)
 
 	pagination = Pagination{
 		Page:  page,
-		Pages: totalPages,
+		Total: totalPages,
 		Limit: limit,
 	}
 

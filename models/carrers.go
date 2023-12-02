@@ -54,11 +54,11 @@ func GetCareers(db *gorm.DB, page, limit int) (careers []Career, pagination Pagi
 		return nil, Pagination{}, err
 	}
 
-	totalPages := (int(totalCount) / limit)
+	totalPages := int(totalCount)
 
 	pagination = Pagination{
 		Page:  page,
-		Pages: totalPages,
+		Total: totalPages,
 		Limit: limit,
 	}
 
@@ -85,11 +85,11 @@ func GetCareersWithHaveCategories(db *gorm.DB, page, limit int) (careers []Caree
 		return nil, Pagination{}, err
 	}
 
-	totalPages := (int(totalCount) / limit) + 1
+	totalPages := int(totalCount)
 
 	pagination = Pagination{
 		Page:  page,
-		Pages: totalPages,
+		Total: totalPages,
 		Limit: limit,
 	}
 
@@ -99,7 +99,7 @@ func GetCareersWithHaveCategories(db *gorm.DB, page, limit int) (careers []Caree
 // Pagination struct
 type Pagination struct {
 	Page  int `json:"page"`
-	Pages int `json:"pages"`
+	Total int `json:"total"`
 	Limit int `json:"limit"`
 }
 
@@ -119,7 +119,6 @@ func CreateCareer(db *gorm.DB, career *Career) (err error) {
 	if err != nil {
 		return err
 	}
-
 	return nil
 }
 
