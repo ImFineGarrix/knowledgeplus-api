@@ -36,6 +36,8 @@ func (Skills) Tablename() string {
 	return "skills"
 }
 
+// totals
+
 // GetCareers retrieves all Career records from the database with pagination.
 func GetCareers(db *gorm.DB, page, limit int) (careers []Career, pagination Pagination, err error) {
 	offset := (page - 1) * limit
@@ -52,7 +54,7 @@ func GetCareers(db *gorm.DB, page, limit int) (careers []Career, pagination Pagi
 		return nil, Pagination{}, err
 	}
 
-	totalPages := (int(totalCount) / limit) + 1
+	totalPages := (int(totalCount) / limit)
 
 	pagination = Pagination{
 		Page:  page,

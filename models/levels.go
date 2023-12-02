@@ -5,8 +5,8 @@ import (
 )
 
 type Level struct {
-	LevelID int    `gorm:"primaryKey"`
-	Name    string `gorm:"not null"`
+	LevelID int    `gorm:"primaryKey" json:"level_id"`
+	Name    string `gorm:"not null" json:"name"`
 }
 
 func (Level) TableName() string {
