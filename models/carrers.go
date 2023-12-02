@@ -119,7 +119,6 @@ func CreateCareer(db *gorm.DB, career *Career) (err error) {
 	if err != nil {
 		return err
 	}
-
 	return nil
 }
 
