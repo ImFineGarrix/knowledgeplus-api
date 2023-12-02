@@ -197,6 +197,13 @@ func (repository *CareerRepo) DeleteCareer(c *gin.Context) {
 		return
 	}
 
+	// Delete associated records in careers_skills table
+	err = repository.Db.Exec("DELETE FROM careers_skills WHERE career_id = ?", id).Error
+	if err != nil {
+		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err})
+		return
+	}
+
 	// Delete the career record
 	err = repository.Db.Delete(&career).Error
 	if err != nil {
