@@ -6,9 +6,9 @@ import (
 
 type Category struct {
 	CategoryID int64     `gorm:"primaryKey;autoIncrement" json:"category_id"`
-	Name       string    `gorm:"not null" json:"name" binding:"max=45"`
+	Name       string    `gorm:"not null" json:"name" binding:"required,max=45"`
 	ImageUrl   string    `gorm:"default:NULL" json:"image_url" binding:"max=255"`
-	Careers    []Careers `gorm:"many2many:categories_careers;foreignKey:CategoryID;joinForeignKey:CategoryID;References:CareerID;joinReferences:CareerID"`
+	Careers    []Careers `gorm:"many2many:categories_careers;foreignKey:CategoryID;joinForeignKey:CategoryID;References:CareerID;joinReferences:CareerID" json:"-"`
 }
 
 type Careers struct {

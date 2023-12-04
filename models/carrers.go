@@ -1,12 +1,14 @@
 package models
 
 import (
+	"fmt"
+
 	"gorm.io/gorm"
 )
 
 type Career struct {
 	CareerID    int64        `gorm:"primaryKey;autoIncrement" json:"career_id"`
-	Name        string       `gorm:"not null" json:"name" binding:"max=45"`
+	Name        string       `gorm:"not null" json:"name" binding:"required,max=45"`
 	Description string       `gorm:"default:NULL" json:"description" binding:"max=255"`
 	ShortDesc   string       `gorm:"default:NULL" json:"short_desc" binding:"max=50"`
 	Categories  []Categories `gorm:"many2many:categories_careers;foreignKey:CareerID;joinForeignKey:CareerID;References:CategoryID;joinReferences:CategoryID" json:"categories"`
@@ -25,7 +27,7 @@ type Skills struct {
 	Description string `gorm:"column:description;default:NULL" json:"description" binding:"max=200"`
 	ImageUrl    string `gorm:"column:image_url;default:NULL" json:"image_url" binding:"max=255"`
 	LevelID     int    `json:"-"`
-	Levels      Levels `gorm:"foreignKey:LevelID;references:LevelID"`
+	Levels      Levels `gorm:"foreignKey:LevelID;references:LevelID" json:"levels"`
 }
 
 func (Career) TableName() string {
@@ -123,7 +125,7 @@ func CreateCareer(db *gorm.DB, career *Career) (err error) {
 }
 
 // UpdateCareer updates an existing Career record in the database.
-func UpdateCareer(db *gorm.DB, career *Career) (err error) {
+func UpdateCareer(db *gorm.DB, updatedCareer *Career) (err error) {
 	existingCareer := &Career{}
 
 	// Begin a transaction
@@ -135,16 +137,30 @@ func UpdateCareer(db *gorm.DB, career *Career) (err error) {
 	}()
 
 	// Check if the career record exists
-	err = tx.Where("career_id = ?", career.CareerID).Preload("Categories").Preload("Skills.Levels").First(existingCareer).Error
+	err = tx.Where("career_id = ?", updatedCareer.CareerID).Preload("Categories").Preload("Skills.Levels").First(existingCareer).Error
 	if err != nil {
 		tx.Rollback()
 		return err
 	}
 
-	// Update the fields of the existing career record
-	existingCareer.Name = career.Name
-	existingCareer.Description = career.Description
-	existingCareer.ShortDesc = career.ShortDesc
+	// Print values before update
+	fmt.Println("Before Update - Existing Career:", existingCareer)
+	fmt.Println("Before Update - Updated Career:", updatedCareer)
+
+	// Update only the specified fields if they are not empty
+	if updatedCareer.Name != "" {
+		existingCareer.Name = updatedCareer.Name
+	}
+
+	if updatedCareer.Description != "" {
+		existingCareer.Description = updatedCareer.Description
+	}
+
+	if updatedCareer.ShortDesc != "" {
+		existingCareer.ShortDesc = updatedCareer.ShortDesc
+	}
+
+	db.Save(existingCareer)
 
 	// Clear existing associations within the transaction
 	err = tx.Model(existingCareer).Association("Categories").Clear()
@@ -159,19 +175,27 @@ func UpdateCareer(db *gorm.DB, career *Career) (err error) {
 		return err
 	}
 
-	// Replace existing categories with new ones
-	err = tx.Model(existingCareer).Association("Categories").Replace(career.Categories)
-	if err != nil {
-		tx.Rollback()
-		return err
+	// Update existing categories with the new one (if provided)
+	if len(updatedCareer.Categories) > 0 {
+		err = tx.Model(existingCareer).Association("Categories").Append(updatedCareer.Categories)
+		if err != nil {
+			tx.Rollback()
+			return err
+		}
 	}
 
-	// Replace existing skills with new ones
-	err = tx.Model(existingCareer).Association("Skills").Replace(career.Skills)
-	if err != nil {
-		tx.Rollback()
-		return err
+	// Update existing skills with the new one (if provided)
+	if len(updatedCareer.Skills) > 0 {
+		err = tx.Model(existingCareer).Association("Skills").Append(updatedCareer.Skills)
+		if err != nil {
+			tx.Rollback()
+			return err
+		}
 	}
+
+	// Print values after update
+	fmt.Println("After Update - Existing Career:", existingCareer)
+	fmt.Println("After Update - Updated Career:", updatedCareer)
 
 	// Commit the transaction
 	err = tx.Commit().Error

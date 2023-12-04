@@ -6,7 +6,7 @@ import (
 
 type Skill struct {
 	SkillID     int       `gorm:"column:skill_id;primaryKey" json:"skill_id"`
-	Name        string    `gorm:"column:name;not null" json:"name" binding:"max=45"`
+	Name        string    `gorm:"column:name;not null" json:"name" binding:"required,max=45"`
 	Description string    `gorm:"column:description;default:NULL" json:"description" binding:"max=200"`
 	ImageUrl    string    `gorm:"column:image_url;default:NULL" json:"image_url" binding:"max=255"`
 	LevelID     int       `json:"level_id"`
