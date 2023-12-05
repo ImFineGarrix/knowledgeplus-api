@@ -20,6 +20,7 @@ func main() {
 func setupRouter() *gin.Engine {
 	r := gin.Default()
 	config := cors.DefaultConfig()
+	config.AllowMethods = []string{"GET", "POST", "PUT", "DELETE"}
 	config.AllowOrigins = []string{"http://localhost:3000", "https://cp23sj2.sit.kmutt.ac.th:3000", "http://cp23sj2.sit.kmutt.ac.th:3001", "http://localhost:3001", "https://cp23sj2.sit.kmutt.ac.th:3001", "http://cp23sj2.sit.kmutt.ac.th:3001"} // Update with your frontend's origin
 	r.Use(cors.New(config))
 	// r.Use(corsMiddleware())

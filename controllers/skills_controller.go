@@ -2,6 +2,7 @@ package controllers
 
 import (
 	"errors"
+	"fmt"
 	"knowledgeplus/go-api/database"
 	"knowledgeplus/go-api/models"
 	"net/http"
@@ -125,6 +126,8 @@ func (repository *SkillRepo) UpdateSkill(c *gin.Context) {
 
 // DeleteSkillById deletes a Skill record by ID.
 func (repository *SkillRepo) DeleteSkillById(c *gin.Context) {
+	fmt.Println("Hello, This is delete skill function")
+	fmt.Println(c.Errors)
 	id, _ := strconv.Atoi(c.Param("id"))
 	var skill models.Skill
 
