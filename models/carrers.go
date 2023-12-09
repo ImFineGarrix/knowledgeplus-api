@@ -30,6 +30,15 @@ type Skills struct {
 	Levels      Levels `gorm:"foreignKey:LevelID;references:LevelID" json:"levels"`
 }
 
+// type UpdateCareerModels struct {
+// 	CareerID    int64        `gorm:"column:career_id;primaryKey;autoIncrement;" json:"career_id"`
+// 	Name        string       `gorm:"column:name; not null; type:VARCHAR(45)" json:"name" binding:"max=45"`
+// 	Description string       `gorm:"column:description; default:NULL; type:LONGTEXT;"  json:"description" binding:"max=1500"`
+// 	ShortDesc   string       `gorm:"column:short_desc; default:NULL type:VARCHAR(50)" json:"short_desc" binding:"max=50"`
+// 	Categories  []Categories `gorm:"many2many:categories_careers;foreignKey:CareerID;joinForeignKey:CareerID;References:CategoryID;joinReferences:CategoryID" json:"categories"`
+// 	Skills      []Skills     `gorm:"many2many:careers_skills;foreignKey:CareerID;joinForeignKey:CareerID;References:SkillID;joinReferences:SkillID" json:"skills"`
+// }
+
 func (Career) TableName() string {
 	return "careers"
 }
