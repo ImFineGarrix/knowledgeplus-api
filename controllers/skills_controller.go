@@ -103,14 +103,23 @@ func (repository *SkillRepo) UpdateSkill(c *gin.Context) {
 		return
 	}
 
-	var updatedSkill models.Skill
+	// var updatedSkill models.Skill
+	// if err := c.ShouldBindJSON(&updatedSkill); err != nil && len(updatedSkill.Name) != 0 || updatedSkill.LevelID != 0 {
+	// 	c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+	// 	return
+	// }
+
+	var updatedSkill models.UpdateSkillModels
 	if err := c.ShouldBindJSON(&updatedSkill); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
 	// Update only the fields you want to change
-	existingSkill.Name = updatedSkill.Name
+	if len(updatedSkill.Name) != 0 {
+		existingSkill.Name = updatedSkill.Name
+	}
+
 	existingSkill.Description = updatedSkill.Description
 	existingSkill.ImageUrl = updatedSkill.ImageUrl
 	existingSkill.LevelID = updatedSkill.LevelID

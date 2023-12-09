@@ -22,6 +22,12 @@ func (Category) TableName() string {
 	return "categories"
 }
 
+type UpdateCategoryModels struct {
+	CategoryID int64  `gorm:"column:category_id; primaryKey;autoIncrement" json:"category_id"`
+	Name       string `gorm:"column:name; not null; type:VARCHAR(45);" json:"name" binding:"max=45"`
+	ImageUrl   string `gorm:"column:image_url; default:NULL; type:VARCHAR(255);" json:"image_url" binding:"max=255"`
+}
+
 // GetCategories retrieves all Category records from the database.
 func GetCategories(db *gorm.DB, Category *[]Category) (err error) {
 	err = db.Preload("Careers").Find(Category).Error

@@ -2,6 +2,7 @@ package controllers
 
 import (
 	"errors"
+	"fmt"
 	"knowledgeplus/go-api/database"
 	"knowledgeplus/go-api/models"
 	"net/http"
@@ -81,14 +82,17 @@ func (repository *CategoriesRepo) UpdateCategory(c *gin.Context) {
 		return
 	}
 
-	var updatedCategory models.Category
+	var updatedCategory models.UpdateCategoryModels
 	if err := c.ShouldBindJSON(&updatedCategory); err != nil {
+		fmt.Println(updatedCategory.Name)
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
 	// Update only the fields you want to change
-	existingCategory.Name = updatedCategory.Name
+	if len(updatedCategory.Name) != 0 {
+		existingCategory.Name = updatedCategory.Name
+	}
 	existingCategory.ImageUrl = updatedCategory.ImageUrl
 
 	err = repository.Db.Save(&existingCategory).Error

@@ -9,7 +9,7 @@ type Skill struct {
 	Name        string    `gorm:"column:name;not null; type:VARCHAR(45);" json:"name" binding:"required,max=45"`
 	Description string    `gorm:"column:description; default:NULL; type:LONGTEXT;" json:"description" binding:"max=1500"`
 	ImageUrl    string    `gorm:"column:image_url; default:NULL; type:VARCHAR(255);" json:"image_url" binding:"max=255"`
-	LevelID     int       `json:"level_id"`
+	LevelID     int       `json:"level_id" binding:"required"`
 	Levels      Levels    `gorm:"foreignKey:LevelID;references:LevelID" json:"-"`
 	Careers     []Careers `gorm:"many2many:careers_skills;foreignKey:SkillID;joinForeignKey:SkillID;References:CareerID;joinReferences:CareerID" json:"-"`
 	// Levels     []Level   `gorm:"foreignKey:LevelID"`
@@ -17,6 +17,13 @@ type Skill struct {
 
 func (Skill) Tablename() string {
 	return "skills"
+}
+
+type UpdateSkillModels struct {
+	Name        string `gorm:"column:name; type:VARCHAR(45);" json:"name" binding:"max=45"`
+	Description string `gorm:"column:description; default:NULL; type:LONGTEXT;" json:"description" binding:"max=1500"`
+	ImageUrl    string `gorm:"column:image_url; default:NULL; type:VARCHAR(255);" json:"image_url" binding:"max=255"`
+	LevelID     int    `json:"level_id" binding:"required"`
 }
 
 type Levels struct {
