@@ -2,7 +2,6 @@ package main
 
 import (
 	"knowledgeplus/go-api/controllers"
-	"net/http"
 
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
@@ -43,10 +42,6 @@ func setupRouter() *gin.Engine {
 	r.Use(cors.Default())
 
 	defaultPath := r.Group("/api")
-
-	defaultPath.GET("ping", func(c *gin.Context) {
-		c.JSON(http.StatusOK, "pong")
-	})
 
 	CareerRepo := controllers.NewCareerRepo()
 	CategoriesRepo := controllers.NewCategoriesRepo()
