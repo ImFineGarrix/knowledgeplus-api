@@ -7,25 +7,25 @@ import (
 )
 
 type Career struct {
-	CareerID    int64        `gorm:"primaryKey;autoIncrement" json:"career_id"`
-	Name        string       `gorm:"not null" json:"name" binding:"required,max=45"`
-	Description string       `gorm:"default:NULL" json:"description" binding:"max=500"`
-	ShortDesc   string       `gorm:"default:NULL" json:"short_desc" binding:"max=50"`
+	CareerID    int64        `gorm:"column:career_id;primaryKey;autoIncrement;" json:"career_id"`
+	Name        string       `gorm:"column:name; not null; type:VARCHAR(45)" json:"name" binding:"required,max=45"`
+	Description string       `gorm:"column:description; default:NULL; type:LONGTEXT;"  json:"description" binding:"max=1500"`
+	ShortDesc   string       `gorm:"column:short_desc; default:NULL type:VARCHAR(50)" json:"short_desc" binding:"max=50"`
 	Categories  []Categories `gorm:"many2many:categories_careers;foreignKey:CareerID;joinForeignKey:CareerID;References:CategoryID;joinReferences:CategoryID" json:"categories"`
 	Skills      []Skills     `gorm:"many2many:careers_skills;foreignKey:CareerID;joinForeignKey:CareerID;References:SkillID;joinReferences:SkillID" json:"skills"`
 }
 
 type Categories struct {
-	CategoryID int64  `gorm:"primaryKey" json:"category_id"`
-	Name       string `gorm:"not null" json:"name"`
-	ImageUrl   string `gorm:"default:NULL" json:"image_url"`
+	CategoryID int64  `gorm:"column:category_id; primaryKey;autoIncrement;" json:"category_id"`
+	Name       string `gorm:"column:name; not null; type:VARCHAR(45);" json:"name" binding:"required,max=45"`
+	ImageUrl   string `gorm:"column:image_url; default:NULL; type:VARCHAR(255);" json:"image_url" binding:"max=255"`
 }
 
 type Skills struct {
 	SkillID     int    `gorm:"column:skill_id;primaryKey" json:"skill_id"`
-	Name        string `gorm:"column:name;not null" json:"name" binding:"max=45"`
-	Description string `gorm:"column:description;default:NULL" json:"description" binding:"max=200"`
-	ImageUrl    string `gorm:"column:image_url;default:NULL" json:"image_url" binding:"max=255"`
+	Name        string `gorm:"column:name;not null; type:VARCHAR(45);" json:"name" binding:"max=45"`
+	Description string `gorm:"column:description;default:NULL type:LONGTEXT" json:"description" binding:"max=1500"`
+	ImageUrl    string `gorm:"column:image_url;default:NULL type:VARCHAR(255)" json:"image_url" binding:"max=255"`
 	LevelID     int    `json:"-"`
 	Levels      Levels `gorm:"foreignKey:LevelID;references:LevelID" json:"levels"`
 }
@@ -107,7 +107,7 @@ type Pagination struct {
 
 // GetCareerById retrieves a Career by its ID from the database.
 func GetCareerById(db *gorm.DB, Career *Career, id int) (err error) {
-	err = db.Where("career_id = ?", id).Preload("Categories").Preload("Skills").First(Career).Error
+	err = db.Where("career_id = ?", id).Preload("Categories").Preload("Skills").Preload("Skills.Levels").First(Career).Error
 	if err != nil {
 		return err
 	}
