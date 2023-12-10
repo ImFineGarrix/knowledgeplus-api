@@ -6,16 +6,15 @@ import (
 
 type Category struct {
 	CategoryID int64     `gorm:"column:category_id; primaryKey;autoIncrement" json:"category_id"`
-	Name       string    `gorm:"column:name; not null; type:VARCHAR(45);" json:"name" binding:"required,max=45"`
-	ImageUrl   string    `gorm:"column:image_url; default:NULL; type:VARCHAR(255);" json:"image_url" binding:"max=255"`
+	Name       string    `gorm:"column:name; not null; type:VARCHAR(255);" json:"name" binding:"required,max=255"`
+	ImageUrl   string    `gorm:"column:image_url; default:NULL; type:LONGTEXT;" json:"image_url" binding:"max=5000"`
 	Careers    []Careers `gorm:"many2many:categories_careers;foreignKey:CategoryID;joinForeignKey:CategoryID;References:CareerID;joinReferences:CareerID" json:"-"`
 }
 
 type Careers struct {
 	CareerID    int64  `gorm:"column:career_id;primaryKey;autoIncrement;" json:"career_id"`
-	Name        string `gorm:"column:name; not null; type:VARCHAR(45)" json:"name" binding:"required,max=45"`
+	Name        string `gorm:"column:name; not null; type:VARCHAR(255)" json:"name" binding:"required,max=255"`
 	Description string `gorm:"column:description; default:NULL; type:LONGTEXT;"  json:"description" binding:"max=1500"`
-	ShortDesc   string `gorm:"column:short_desc; default:NULL type:VARCHAR(50)" json:"short_desc" binding:"max=50"`
 }
 
 func (Category) TableName() string {
@@ -24,8 +23,8 @@ func (Category) TableName() string {
 
 type UpdateCategoryModels struct {
 	CategoryID int64  `gorm:"column:category_id; primaryKey;autoIncrement" json:"category_id"`
-	Name       string `gorm:"column:name; not null; type:VARCHAR(45);" json:"name" binding:"max=45"`
-	ImageUrl   string `gorm:"column:image_url; default:NULL; type:VARCHAR(255);" json:"image_url" binding:"max=255"`
+	Name       string `gorm:"column:name; not null; type:VARCHAR(255);" json:"name" binding:"max=255"`
+	ImageUrl   string `gorm:"column:image_url; default:NULL; type:LONGTEXT;" json:"image_url" binding:"max=5000"`
 }
 
 // GetCategories retrieves all Category records from the database.
