@@ -74,9 +74,40 @@ func (repository *CareerRepo) GetCareers(c *gin.Context) {
 	})
 }
 
+// // get Careers with categories and pagination
+// func (repository *CareerRepo) GetCareersWithHaveCategories(c *gin.Context) {
+// 	var (
+// 		careers    []models.Career
+// 		pagination models.Pagination
+// 		err        error
+// 	)
+
+// 	page, err := strconv.Atoi(c.Query("page"))
+// 	if err != nil || page <= 0 {
+// 		page = 1
+// 	}
+
+// 	limit, err := strconv.Atoi(c.Query("limit"))
+// 	if err != nil || limit <= 0 {
+// 		limit = 10 // set a default limit
+// 	}
+
+// 	careers, pagination, err = models.GetCareersWithHaveCategories(repository.Db, page, limit)
+// 	if err != nil {
+// 		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+// 		return
+// 	}
+
+// 	c.JSON(http.StatusOK, gin.H{
+// 		"careers":    careers,
+// 		"pagination": pagination,
+// 	})
+// }
+
 // get Careers with categories and pagination
 func (repository *CareerRepo) GetCareersWithHaveCategories(c *gin.Context) {
 	var (
+		careerIDs  []uint
 		careers    []models.Career
 		pagination models.Pagination
 		err        error
@@ -92,10 +123,47 @@ func (repository *CareerRepo) GetCareersWithHaveCategories(c *gin.Context) {
 		limit = 10 // set a default limit
 	}
 
-	careers, pagination, err = models.GetCareersWithHaveCategories(repository.Db, page, limit)
+	// Query distinct career IDs
+	err = repository.Db.
+		Model(&models.Career{}).
+		Select("DISTINCT career_id").
+		Limit(limit).
+		Offset((page-1)*limit).
+		Pluck("career_id", &careerIDs).
+		Error
 	if err != nil {
 		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
+	}
+
+	// Query complete careers based on distinct IDs
+	err = repository.Db.
+		Preload("Categories").
+		Preload("Skills").
+		Where("career_id IN ?", careerIDs).
+		Find(&careers).
+		Error
+	if err != nil {
+		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	// Count total careers (ignoring pagination)
+	var totalCareers int64
+	err = repository.Db.Model(&models.Career{}).Distinct("career_id").Count(&totalCareers).Error
+	if err != nil {
+		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	// Convert totalCareers to int
+	totalCareersInt := int(totalCareers)
+
+	// Create pagination information
+	pagination = models.Pagination{
+		Page:  page,
+		Total: totalCareersInt,
+		Limit: limit,
 	}
 
 	c.JSON(http.StatusOK, gin.H{
@@ -129,6 +197,8 @@ func (repository *CareerRepo) CreateCareer(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
+
+	// fmt.Println(Career.Categories[0].CategoryID)
 	// fmt.Println(&Career)
 	err := models.CreateCareer(repository.Db, &Career)
 	if err != nil {
