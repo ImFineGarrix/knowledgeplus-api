@@ -150,10 +150,6 @@ func UpdateCareer(db *gorm.DB, updatedCareer *Career) (err error) {
 		return err
 	}
 
-	// Print values before update
-	fmt.Println("Before Update - Existing Career:", existingCareer)
-	fmt.Println("Before Update - Updated Career:", updatedCareer)
-
 	// Update only the specified fields if they are not empty
 	if updatedCareer.Name != "" {
 		existingCareer.Name = updatedCareer.Name
