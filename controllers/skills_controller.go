@@ -90,9 +90,10 @@ func (repository *SkillRepo) CreateSkill(c *gin.Context) {
 // UpdateSkill updates a Skill record by ID.
 func (repository *SkillRepo) UpdateSkill(c *gin.Context) {
 	id, _ := strconv.Atoi(c.Param("id"))
-	var existingSkill models.Skill
+	var updatedSkill models.Skill
 
-	err := repository.Db.Preload("Levels").First(&existingSkill, id).Error
+	// Check if the skill record exists
+	err := models.GetSkillById(repository.Db, &updatedSkill, id)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			c.AbortWithStatusJSON(http.StatusNotFound, gin.H{"error": "Record not found!"})
@@ -103,34 +104,20 @@ func (repository *SkillRepo) UpdateSkill(c *gin.Context) {
 		return
 	}
 
-	// var updatedSkill models.Skill
-	// if err := c.ShouldBindJSON(&updatedSkill); err != nil && len(updatedSkill.Name) != 0 || updatedSkill.LevelID != 0 {
-	// 	c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-	// 	return
-	// }
-
-	var updatedSkill models.UpdateSkillModels
+	// Bind the updated data from the request
 	if err := c.ShouldBindJSON(&updatedSkill); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
-	// Update only the fields you want to change
-	if len(updatedSkill.Name) != 0 {
-		existingSkill.Name = updatedSkill.Name
-	}
-
-	existingSkill.Description = updatedSkill.Description
-	existingSkill.ImageUrl = updatedSkill.ImageUrl
-	existingSkill.LevelID = updatedSkill.LevelID
-
-	err = repository.Db.Save(&existingSkill).Error
+	// Update the skill record
+	err = models.UpdateSkill(repository.Db, &updatedSkill)
 	if err != nil {
 		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err})
 		return
 	}
 
-	c.JSON(http.StatusOK, existingSkill)
+	c.JSON(http.StatusOK, updatedSkill)
 }
 
 // DeleteSkillById deletes a Skill record by ID.
@@ -140,7 +127,7 @@ func (repository *SkillRepo) DeleteSkillById(c *gin.Context) {
 	id, _ := strconv.Atoi(c.Param("id"))
 	var skill models.Skill
 
-	err := repository.Db.Where("skill_id = ?", id).Preload("Levels").First(&skill).Error
+	err := repository.Db.Where("skill_id = ?", id).Preload("Careers").Preload("SkillsLevels").First(&skill).Error
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			c.AbortWithStatusJSON(http.StatusNotFound, gin.H{"error": "Record not found!"})
@@ -153,6 +140,13 @@ func (repository *SkillRepo) DeleteSkillById(c *gin.Context) {
 
 	// Delete associated records in careers_skills table
 	err = repository.Db.Exec("DELETE FROM careers_skills WHERE skill_id = ?", id).Error
+	if err != nil {
+		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err})
+		return
+	}
+
+	// Delete associated records in skills_levels table
+	err = repository.Db.Exec("DELETE FROM skills_levels WHERE skill_id = ?", id).Error
 	if err != nil {
 		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err})
 		return

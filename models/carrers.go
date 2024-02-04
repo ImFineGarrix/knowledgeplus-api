@@ -1,23 +1,27 @@
 package models
 
 import (
-	"fmt"
-
 	"gorm.io/gorm"
 )
 
 type Career struct {
-	CareerID    int64        `gorm:"column:career_id;primaryKey;autoIncrement;" json:"career_id"`
-	Name        string       `gorm:"column:name; not null; type:VARCHAR(255)" json:"name" binding:"required,max=255"`
-	Description string       `gorm:"column:description; default:NULL; type:LONGTEXT;"  json:"description" binding:"max=1500"`
-	Categories  []Categories `gorm:"many2many:categories_careers;foreignKey:CareerID;joinForeignKey:CareerID;References:CategoryID;joinReferences:CategoryID" json:"categories"`
-	Skills      []Skills     `gorm:"many2many:careers_skills;foreignKey:CareerID;joinForeignKey:CareerID;References:SkillID;joinReferences:SkillID" json:"skills"`
+	CareerID    int64             `gorm:"column:career_id;primaryKey;autoIncrement;" json:"career_id"`
+	Name        string            `gorm:"column:name; not null; type:VARCHAR(255)" json:"name" binding:"required,max=255"`
+	Description string            `gorm:"column:description; default:NULL; type:LONGTEXT;"  json:"description" binding:"max=1500"`
+	Groups      []GroupsInCareers `gorm:"many2many:groups_careers;foreignKey:CareerID;joinForeignKey:CareerID;References:GroupID;joinReferences:GroupID" json:"groups"`
+	Skills      []Skills          `gorm:"many2many:careers_skills;foreignKey:CareerID;joinForeignKey:CareerID;References:SkillID;joinReferences:SkillID" json:"-"`
 }
 
-type Categories struct {
-	CategoryID int64  `gorm:"column:category_id; primaryKey;autoIncrement;" json:"category_id"`
-	Name       string `gorm:"column:name; not null; type:VARCHAR(255);" json:"name" binding:"required,max=255"`
-	ImageUrl   string `gorm:"column:image_url; default:NULL; type:LONGTEXT;" json:"image_url" binding:"max=5000"`
+type GroupsInCareers struct {
+	GroupID int64  `gorm:"column:group_id;primaryKey;autoIncrement;" json:"group_id"`
+	Name    string `gorm:"column:name; not null; type:VARCHAR(255)" json:"name" binding:"required,max=255"`
+	// Sections []SectionsInGroup `gorm:"many2many:sections_groups;foreignKey:GroupID;joinForeignKey:GroupID;References:SectionID;joinReferences:SectionID" json:"sections"`
+}
+
+type SectionInCareers struct {
+	SectionID   int64  `gorm:"column:section_id; primaryKey; autoIncrement" json:"section_id"`
+	Name        string `gorm:"column:name; not null; type:VARCHAR(255);" json:"name" binding:"required,max=255"`
+	Description string `gorm:"column:description; default:NULL; type:LONGTEXT;" json:"description" binding:"max=1500"`
 }
 
 type Skills struct {
@@ -25,8 +29,7 @@ type Skills struct {
 	Name        string `gorm:"column:name;not null; type:VARCHAR(255);" json:"name" binding:"max=255"`
 	Description string `gorm:"column:description;default:NULL type:LONGTEXT;" json:"description" binding:"max=1500"`
 	ImageUrl    string `gorm:"column:image_url;default:NULL type:LONGTEXT;" json:"image_url" binding:"max=5000"`
-	LevelID     int    `json:"-"`
-	Levels      Levels `gorm:"foreignKey:LevelID;references:LevelID" json:"levels"`
+	Type        string `gorm:"column:type;type:ENUM('SOFT','HARD');" json:"type"`
 }
 
 // type UpdateCareerModels struct {
@@ -45,12 +48,15 @@ func (Skills) Tablename() string {
 	return "skills"
 }
 
-// totals
+func (GroupsInCareers) TableName() string {
+	return "groups"
+}
 
+// เอาแค่ group ไม่เอา skill
 // GetCareers retrieves all Career records from the database with pagination.
 func GetCareers(db *gorm.DB, page, limit int) (careers []Career, pagination Pagination, err error) {
 	offset := (page - 1) * limit
-	err = db.Preload("Categories").Preload("Skills").Preload("Skills.Levels").
+	err = db.Preload("Groups").Preload("Skills").
 		Offset(offset).Limit(limit).
 		Find(&careers).Error
 	if err != nil {
@@ -74,47 +80,42 @@ func GetCareers(db *gorm.DB, page, limit int) (careers []Career, pagination Pagi
 	return careers, pagination, nil
 }
 
-// GetCareersWithHaveCategories retrieves careers where category_id in many-to-many is not null with pagination.
-func GetCareersWithHaveCategories(db *gorm.DB, page, limit int) (careers []Career, pagination Pagination, err error) {
-	offset := (page - 1) * limit
-	err = db.Joins("JOIN categories_careers ON careers.career_id = categories_careers.career_id").
-		Where("categories_careers.category_id IS NOT NULL").
-		Preload("Categories").Preload("Skills").
-		Offset(offset).Limit(limit).
-		Find(&careers).Error
-	if err != nil {
-		return nil, Pagination{}, err
-	}
+//ยังไม่ใช้
+// // GetCareersWithHaveCategories retrieves careers where category_id in many-to-many is not null with pagination.
+// func GetCareersWithHaveCategories(db *gorm.DB, page, limit int) (careers []Career, pagination Pagination, err error) {
+// 	offset := (page - 1) * limit
+// 	err = db.Joins("JOIN categories_careers ON careers.career_id = categories_careers.career_id").
+// 		Where("categories_careers.category_id IS NOT NULL").
+// 		Preload("Categories").Preload("Skills").
+// 		Offset(offset).Limit(limit).
+// 		Find(&careers).Error
+// 	if err != nil {
+// 		return nil, Pagination{}, err
+// 	}
 
-	// Calculate total pages
-	var totalCount int64
-	if err := db.Joins("JOIN categories_careers ON careers.career_id = categories_careers.career_id").
-		Where("categories_careers.category_id IS NOT NULL").
-		Model(&Career{}).Count(&totalCount).Error; err != nil {
-		return nil, Pagination{}, err
-	}
+// 	// Calculate total pages
+// 	var totalCount int64
+// 	if err := db.Joins("JOIN categories_careers ON careers.career_id = categories_careers.career_id").
+// 		Where("categories_careers.category_id IS NOT NULL").
+// 		Model(&Career{}).Count(&totalCount).Error; err != nil {
+// 		return nil, Pagination{}, err
+// 	}
 
-	totalPages := int(totalCount)
+// 	totalPages := int(totalCount)
 
-	pagination = Pagination{
-		Page:  page,
-		Total: totalPages,
-		Limit: limit,
-	}
+// 	pagination = Pagination{
+// 		Page:  page,
+// 		Total: totalPages,
+// 		Limit: limit,
+// 	}
 
-	return careers, pagination, nil
-}
+// 	return careers, pagination, nil
+// }
 
-// Pagination struct
-type Pagination struct {
-	Page  int `json:"page"`
-	Total int `json:"total"`
-	Limit int `json:"limit"`
-}
-
+// Get By id ให้โชว์ Skill อย่างเดียว(ทำหลัง Course เสร็จ)
 // GetCareerById retrieves a Career by its ID from the database.
 func GetCareerById(db *gorm.DB, Career *Career, id int) (err error) {
-	err = db.Where("career_id = ?", id).Preload("Categories").Preload("Skills").Preload("Skills.Levels").First(Career).Error
+	err = db.Where("career_id = ?", id).Preload("Groups").Preload("Skills").First(Career).Error
 	if err != nil {
 		return err
 	}
@@ -131,7 +132,7 @@ func CreateCareer(db *gorm.DB, career *Career) (err error) {
 	return nil
 }
 
-// UpdateCareer updates an existing Career record in the database.
+// UpdateCareer updates an existing Career record in the database. ** แก้รายละเอียดใน group ไม่ได้(ระบบตอนแก้ดู id เป็นหลัก,ถ้าไม่ได้ส่ง id แล้วทีรายละเอียดอื่นๆส่งมามันจะส้าง id ใหม่ใน group ให้)
 func UpdateCareer(db *gorm.DB, updatedCareer *Career) (err error) {
 	existingCareer := &Career{}
 
@@ -144,7 +145,7 @@ func UpdateCareer(db *gorm.DB, updatedCareer *Career) (err error) {
 	}()
 
 	// Check if the career record exists
-	err = tx.Where("career_id = ?", updatedCareer.CareerID).Preload("Categories").Preload("Skills.Levels").First(existingCareer).Error
+	err = tx.Where("career_id = ?", updatedCareer.CareerID).Preload("Groups").Preload("Skills").First(existingCareer).Error
 	if err != nil {
 		tx.Rollback()
 		return err
@@ -162,39 +163,20 @@ func UpdateCareer(db *gorm.DB, updatedCareer *Career) (err error) {
 	db.Save(existingCareer)
 
 	// Clear existing associations within the transaction
-	err = tx.Model(existingCareer).Association("Categories").Clear()
+	err = tx.Model(existingCareer).Association("Groups").Clear()
 	if err != nil {
 		tx.Rollback()
 		return err
 	}
 
-	err = tx.Model(existingCareer).Association("Skills").Clear()
-	if err != nil {
-		tx.Rollback()
-		return err
-	}
-
-	// Update existing categories with the new one (if provided)
-	if len(updatedCareer.Categories) > 0 {
-		err = tx.Model(existingCareer).Association("Categories").Append(updatedCareer.Categories)
+	// Update existing groups with the new one (if provided)
+	if len(updatedCareer.Groups) > 0 {
+		err = tx.Model(existingCareer).Association("Groups").Append(updatedCareer.Groups)
 		if err != nil {
 			tx.Rollback()
 			return err
 		}
 	}
-
-	// Update existing skills with the new one (if provided)
-	if len(updatedCareer.Skills) > 0 {
-		err = tx.Model(existingCareer).Association("Skills").Append(updatedCareer.Skills)
-		if err != nil {
-			tx.Rollback()
-			return err
-		}
-	}
-
-	// Print values after update
-	fmt.Println("After Update - Existing Career:", existingCareer)
-	fmt.Println("After Update - Updated Career:", updatedCareer)
 
 	// Commit the transaction
 	err = tx.Commit().Error
@@ -213,3 +195,12 @@ func DeleteCareerById(db *gorm.DB, id int) (err error) {
 	}
 	return nil
 }
+
+// Pagination struct
+type Pagination struct {
+	Page  int `json:"page"`
+	Total int `json:"total"`
+	Limit int `json:"limit"`
+}
+
+// get by id ที่เอาแค่ course อย่างเดียว (ทำเป็นเส้นใหม่)(ทำหลัง course เสร็จ)
