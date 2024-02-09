@@ -2,32 +2,32 @@ pipeline {
     agent any
 
     stages {
-       stage('Remove dev') {
+       stage('Remove') {
             steps {
                 script {
                     sh '''
-                        docker rm -f gin-container-dev || true
+                        docker rm -f gin-container-${ENV} || true
                         docker image prune -af
                     '''
                 }
             }
         }
-         stage('Build dev') {
+         stage('Build') {
             steps {
                 script {
                     sh '''
                         docker build \
                         --build-arg ENV=${ENV} \
-                        -t sj2go-gin-dev:latest .                       
+                        -t sj2go-gin-${ENV}:latest .                       
                     '''
                 }
             }
         }
-        stage('Deploy Dev') {
+        stage('Deploy') {
             steps {
                 script {
                     sh '''                     
-                        docker run -d --name gin-container-dev -p 8081:8081 --network dev sj2go-gin-dev:latest
+                        docker run -d --name gin-container-${ENV} -p 8081:8081 --network ${ENV} sj2go-gin-${ENV}:latest
                     '''
                 }
             }
