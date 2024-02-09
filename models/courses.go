@@ -11,8 +11,8 @@ type Course struct {
 	LearnHours     string                `gorm:"column:learn_hours; default:NULL; type:VARCHAR(45);" json:"learn_hours"`
 	AcademicYear   string                `gorm:"column:academic_year; default:NULL; type:VARCHAR(45);" json:"academic_year"`
 	CourseLink     string                `gorm:"column:course_link; default:NULL; type:LONGTEXT;" json:"course_link"`
-	Organization   OrganizationInCourses `gorm:"foreignKey:OrganizationID" json:"-"`
-	OrganizationID int                   `gorm:"column:organization_id" json:"organization_id"`
+	Organization   OrganizationInCourses `gorm:"foreignKey:OrganizationID;references:OrganizationID" json:"organization"`
+	OrganizationID int                   `gorm:"column:organization_id" json:"-"`
 	SkillsLevels   []SkillsLevels        `gorm:"foreignKey:CourseID; References:CourseID;" json:"skills_levels"`
 }
 
@@ -99,50 +99,33 @@ func UpdateCourse(db *gorm.DB, updatedCourse *Course) (err error) {
 		return err
 	}
 
-	// // Update only the specified fields if they are not empty
-	// if updatedCourse.Name != "" {
-	// 	existingCourse.Name = updatedCourse.Name
-	// }
+	// Update only the specified fields if they are not empty
+	existingCourse.Name = updatedCourse.Name
+	existingCourse.Description = updatedCourse.Description
+	existingCourse.LearnHours = updatedCourse.LearnHours
+	existingCourse.AcademicYear = updatedCourse.AcademicYear
+	existingCourse.CourseLink = updatedCourse.CourseLink
 
-	// if updatedCourse.Description != "" {
-	// 	existingCourse.Description = updatedCourse.Description
-	// }
+	// Update organization_id only
+	existingCourse.OrganizationID = updatedCourse.Organization.OrganizationID
 
-	// if updatedCourse.LearnHours != "" {
-	// 	existingCourse.LearnHours = updatedCourse.LearnHours
-	// }
+	db.Save(existingCourse)
 
-	// if updatedCourse.AcademicYear != "" {
-	// 	existingCourse.AcademicYear = updatedCourse.AcademicYear
-	// }
+	// Clear existing associations within the transaction
+	err = tx.Model(existingCourse).Association("SkillsLevels").Clear()
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
 
-	// if updatedCourse.CourseLink != "" {
-	// 	existingCourse.CourseLink = updatedCourse.CourseLink
-	// }
-
-	db.Save(updatedCourse)
-
-	// // Update the organization
-	// if err := tx.Model(existingCourse).Association("Organization").Replace(updatedCourse.Organization); err != nil {
-	// 	tx.Rollback()
-	// 	return err
-	// }
-
-	// // Clear existing associations within the transaction
-	// err = tx.Model(existingCourse).Association("SkillsLevels").Clear()
-	// if err != nil {
-	// 	tx.Rollback()
-	// 	return err
-	// }
-
-	// // Update existing skills_levels with the new ones (if provided)
-	// if len(updatedCourse.SkillsLevels) > 0 {
-	// 	err = tx.Model(existingCourse).Association("SkillsLevels").Append(updatedCourse.SkillsLevels)
-	// 	if err != nil {
-	// 		tx.Rollback()
-	// 		return err
-	// 	}
-	// }
+	// Update existing skills_levels with the new ones (if provided)
+	if len(updatedCourse.SkillsLevels) > 0 {
+		err = tx.Model(existingCourse).Association("SkillsLevels").Append(updatedCourse.SkillsLevels)
+		if err != nil {
+			tx.Rollback()
+			return err
+		}
+	}
 
 	// Commit the transaction
 	if err := tx.Commit().Error; err != nil {

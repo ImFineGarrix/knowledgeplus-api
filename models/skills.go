@@ -1,8 +1,6 @@
 package models
 
 import (
-	"fmt"
-
 	"gorm.io/gorm"
 )
 
@@ -114,27 +112,33 @@ func UpdateSkill(db *gorm.DB, updatedSkill *Skill) (err error) {
 		return err
 	}
 
-	// Update only the specified fields if they are not empty
-	if updatedSkill.Name != "" {
-		existingSkill.Name = updatedSkill.Name
-	}
+	// // Update only the specified fields if they are not empty
+	// if updatedSkill.Name != "" {
+	// 	existingSkill.Name = updatedSkill.Name
+	// }
 
-	if updatedSkill.Description != "" {
-		existingSkill.Description = updatedSkill.Description
-	}
+	// if updatedSkill.Description != "" {
+	// 	existingSkill.Description = updatedSkill.Description
+	// }
 
-	if updatedSkill.ImageUrl != "" {
-		existingSkill.ImageUrl = updatedSkill.ImageUrl
-	}
+	// if updatedSkill.ImageUrl != "" {
+	// 	existingSkill.ImageUrl = updatedSkill.ImageUrl
+	// }
 
-	if updatedSkill.Type != "" {
-		existingSkill.Type = updatedSkill.Type
-	}
+	// if updatedSkill.Type != "" {
+	// 	existingSkill.Type = updatedSkill.Type
+	// }
 
-	fmt.Println(existingSkill.SkillID)
-	// existingSkill.SkillID = updatedSkill.SkillID
+	// fmt.Println(existingSkill.SkillID)
+	// // existingSkill.SkillID = updatedSkill.SkillID
 
-	db.Save(existingSkill)
+	// err = tx.Model(existingSkill).Association("SkillLevels").Clear()
+	// if err != nil {
+	// 	tx.Rollback()
+	// 	return err
+	// }
+
+	db.Save(updatedSkill)
 
 	// Clear existing associations within the transaction
 	err = tx.Model(existingSkill).Association("Careers").Clear()
@@ -152,21 +156,21 @@ func UpdateSkill(db *gorm.DB, updatedSkill *Skill) (err error) {
 		}
 	}
 
-	// // Clear existing associations within the transaction
-	// err = tx.Model(existingSkill).Association("SkillsLevels").Clear()
-	// if err != nil {
-	// 	tx.Rollback()
-	// 	return err
-	// }
+	// Clear existing associations within the transaction
+	err = tx.Model(existingSkill).Association("SkillsLevels").Clear()
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
 
-	// // Update existing groups with the new one (if provided)
-	// if len(updatedSkill.SkillsLevels) > 0 {
-	// 	err = tx.Model(existingSkill).Association("SkillsLevels").Append(updatedSkill.SkillsLevels)
-	// 	if err != nil {
-	// 		tx.Rollback()
-	// 		return err
-	// 	}
-	// }
+	// Update existing groups with the new ones (if provided)
+	if len(updatedSkill.SkillsLevels) > 0 {
+		err = tx.Model(existingSkill).Association("SkillsLevels").Append(updatedSkill.SkillsLevels)
+		if err != nil {
+			tx.Rollback()
+			return err
+		}
+	}
 
 	// Commit the transaction
 	if err := tx.Commit().Error; err != nil {
