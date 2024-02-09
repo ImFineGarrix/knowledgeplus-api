@@ -6,6 +6,10 @@ WORKDIR /app
 
 COPY go.mod .
 COPY go.sum .
+ARG ENV
+
+# Set environment
+ENV ENV=${ENV}
 
 RUN go mod download
 
