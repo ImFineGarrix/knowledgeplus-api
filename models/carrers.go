@@ -4,12 +4,13 @@ import (
 	"gorm.io/gorm"
 )
 
+// all function career not finish
 type Career struct {
-	CareerID    int64             `gorm:"column:career_id;primaryKey;autoIncrement;" json:"career_id"`
-	Name        string            `gorm:"column:name; not null; type:VARCHAR(255)" json:"name" binding:"required,max=255"`
-	Description string            `gorm:"column:description; default:NULL; type:LONGTEXT;"  json:"description" binding:"max=1500"`
-	Groups      []GroupsInCareers `gorm:"many2many:groups_careers;foreignKey:CareerID;joinForeignKey:CareerID;References:GroupID;joinReferences:GroupID" json:"groups"`
-	Skills      []Skills          `gorm:"many2many:careers_skills;foreignKey:CareerID;joinForeignKey:CareerID;References:SkillID;joinReferences:SkillID" json:"-"`
+	CareerID     int64                   `gorm:"column:career_id;primaryKey;autoIncrement;" json:"career_id"`
+	Name         string                  `gorm:"column:name; not null; type:VARCHAR(255)" json:"name" binding:"required,max=255"`
+	Description  string                  `gorm:"column:description; default:NULL; type:LONGTEXT;"  json:"description" binding:"max=1500"`
+	Groups       []GroupsInCareers       `gorm:"many2many:groups_careers;foreignKey:CareerID;joinForeignKey:CareerID;References:GroupID;joinReferences:GroupID" json:"groups"`
+	SkillsLevels []SkillsLevelsInCareers `gorm:"foreignKey:CareerID; References:CareerID;" json:"skills_levels"`
 }
 
 type GroupsInCareers struct {
@@ -24,12 +25,38 @@ type SectionInCareers struct {
 	Description string `gorm:"column:description; default:NULL; type:LONGTEXT;" json:"description" binding:"max=1500"`
 }
 
-type Skills struct {
-	SkillID     int    `gorm:"column:skill_id;primaryKey" json:"skill_id"`
-	Name        string `gorm:"column:name;not null; type:VARCHAR(255);" json:"name" binding:"max=255"`
-	Description string `gorm:"column:description;default:NULL type:LONGTEXT;" json:"description" binding:"max=1500"`
-	ImageUrl    string `gorm:"column:image_url;default:NULL type:LONGTEXT;" json:"image_url" binding:"max=5000"`
-	Type        string `gorm:"column:type;type:ENUM('SOFT','HARD');" json:"type"`
+type SkillsLevelsInCareers struct {
+	SkillsLevelsID int             `gorm:"column:skills_levels_id; primaryKey; autoIncrement;" json:"skills_levels_id"`
+	SkillID        *int            `gorm:"column:skill_id;" json:"skill_id"`
+	KnowledgeDesc  string          `gorm:"column:knowledge_desc;" json:"knowledge_desc"`
+	AbilityDesc    string          `gorm:"column:ability_desc;" json:"ability_desc"`
+	LevelsID       int             `gorm:"column:levels_id; not null" json:"levels_id"`
+	CourseID       *int            `gorm:"column:course_id; not null;" json:"course_id"`
+	CareerID       *int            `gorm:"column:career_id; not null;" json:"career_id"`
+	Skill          SkillInCareers  `gorm:"foreignKey:SkillID;references:SkillID" json:"skill"`
+	Course         CourseInCareers `gorm:"foreignKey:CourseID;references:CourseID" json:"courses"`
+}
+
+type SkillInCareers struct {
+	SkillID      *int                   `gorm:"column:skill_id;primaryKey" json:"-"`
+	Name         string                 `gorm:"column:name;not null; type:VARCHAR(255);" json:"name" binding:"required,max=255"`
+	Description  string                 `gorm:"column:description; default:NULL; type:LONGTEXT;" json:"description" binding:"max=1500"`
+	ImageUrl     string                 `gorm:"column:image_url; default:NULL; type:LONGTEXT;" json:"image_url" binding:"max=5000"`
+	Type         string                 `gorm:"column:type; default:NULL; type:ENUM('SOFT','HARD');" json:"type" binding:"max=100"`
+	SkillsLevels []SkillsLevelsInSkills `gorm:"foreignKey:SkillID; References:SkillID;" json:"-"`
+}
+
+type CourseInCareers struct {
+	CourseID        int                     `gorm:"column:course_id;primaryKey" json:"-"`
+	Name            string                  `gorm:"column:name;not null; type:VARCHAR(255);" json:"name" binding:"required,max=255"`
+	Description     string                  `gorm:"column:description; default:NULL; type:LONGTEXT;" json:"description" binding:"max=1500"`
+	LearnHours      string                  `gorm:"column:learn_hours; default:NULL; type:VARCHAR(45);" json:"learn_hours"`
+	AcademicYear    string                  `gorm:"column:academic_year; default:NULL; type:VARCHAR(45);" json:"academic_year"`
+	CourseLink      string                  `gorm:"column:course_link; default:NULL; type:LONGTEXT;" json:"course_link"`
+	LearningOutcome string                  `gorm:"column:learinig_outcome; default:NULL; type:LONGTEXT;" json:"learning_outcome"`
+	Organization    OrganizationInCourses   `gorm:"foreignKey:OrganizationID;references:OrganizationID" json:"organization"`
+	OrganizationID  int                     `gorm:"column:organization_id" json:"organization_id"`
+	SkillsLevels    []SkillsLevelsInCourses `gorm:"foreignKey:CourseID; References:CourseID;" json:"-"`
 }
 
 // type UpdateCareerModels struct {
@@ -44,7 +71,15 @@ func (Career) TableName() string {
 	return "careers"
 }
 
-func (Skills) Tablename() string {
+func (SkillsLevelsInCareers) TableName() string {
+	return "skills_levels"
+}
+
+func (CourseInCareers) TableName() string {
+	return "courses"
+}
+
+func (SkillInCareers) TableName() string {
 	return "skills"
 }
 
@@ -52,11 +87,10 @@ func (GroupsInCareers) TableName() string {
 	return "groups"
 }
 
-// เอาแค่ group ไม่เอา skill
 // GetCareers retrieves all Career records from the database with pagination.
 func GetCareers(db *gorm.DB, page, limit int) (careers []Career, pagination Pagination, err error) {
 	offset := (page - 1) * limit
-	err = db.Preload("Groups").Preload("Skills").
+	err = db.Preload("SkillsLevels.Skill").Preload("SkillsLevels.Course.Organization").
 		Offset(offset).Limit(limit).
 		Find(&careers).Error
 	if err != nil {
@@ -115,7 +149,7 @@ func GetCareers(db *gorm.DB, page, limit int) (careers []Career, pagination Pagi
 // Get By id ให้โชว์ Skill อย่างเดียว(ทำหลัง Course เสร็จ)
 // GetCareerById retrieves a Career by its ID from the database.
 func GetCareerById(db *gorm.DB, Career *Career, id int) (err error) {
-	err = db.Where("career_id = ?", id).Preload("Groups").Preload("Skills").First(Career).Error
+	err = db.Where("career_id = ?", id).Preload("SkillsLevels.Skill").Preload("SkillsLevels.Course.Organization").First(Career).Error
 	if err != nil {
 		return err
 	}
@@ -145,22 +179,33 @@ func UpdateCareer(db *gorm.DB, updatedCareer *Career) (err error) {
 	}()
 
 	// Check if the career record exists
-	err = tx.Where("career_id = ?", updatedCareer.CareerID).Preload("Groups").Preload("Skills").First(existingCareer).Error
+	err = tx.Where("career_id = ?", updatedCareer.CareerID).Preload("SkillsLevels.Skill").Preload("SkillsLevels.Course.Organization").First(existingCareer).Error
 	if err != nil {
 		tx.Rollback()
 		return err
 	}
 
-	// Update only the specified fields if they are not empty
-	if updatedCareer.Name != "" {
-		existingCareer.Name = updatedCareer.Name
+	// Delete all existing SkillsLevels records for the specified course
+	err = tx.Where("career_id = ?", existingCareer.CareerID).Delete(&SkillsLevels{}).Error
+	if err != nil {
+		tx.Rollback()
+		return err
 	}
 
-	if updatedCareer.Description != "" {
-		existingCareer.Description = updatedCareer.Description
+	// Commit the delete operation
+	if err := tx.Commit().Error; err != nil {
+		return err
 	}
 
-	db.Save(existingCareer)
+	// Begin a new transaction for the update operation
+	tx = db.Begin()
+
+	// Save the updated skill
+	err = tx.Save(updatedCareer).Error
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
 
 	// Clear existing associations within the transaction
 	err = tx.Model(existingCareer).Association("Groups").Clear()

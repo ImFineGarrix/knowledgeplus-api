@@ -5,22 +5,43 @@ import (
 )
 
 type Course struct {
-	CourseID       int                   `gorm:"column:course_id;primaryKey" json:"course_id"`
-	Name           string                `gorm:"column:name;not null; type:VARCHAR(255);" json:"name" binding:"required,max=255"`
-	Description    string                `gorm:"column:description; default:NULL; type:LONGTEXT;" json:"description" binding:"max=1500"`
-	LearnHours     string                `gorm:"column:learn_hours; default:NULL; type:VARCHAR(45);" json:"learn_hours"`
-	AcademicYear   string                `gorm:"column:academic_year; default:NULL; type:VARCHAR(45);" json:"academic_year"`
-	CourseLink     string                `gorm:"column:course_link; default:NULL; type:LONGTEXT;" json:"course_link"`
-	Organization   OrganizationInCourses `gorm:"foreignKey:OrganizationID;references:OrganizationID" json:"organization"`
-	OrganizationID int                   `gorm:"column:organization_id" json:"-"`
-	SkillsLevels   []SkillsLevels        `gorm:"foreignKey:CourseID; References:CourseID;" json:"skills_levels"`
+	CourseID        int                     `gorm:"column:course_id;primaryKey" json:"course_id"`
+	Name            string                  `gorm:"column:name;not null; type:VARCHAR(255);" json:"name" binding:"required,max=255"`
+	Description     string                  `gorm:"column:description; default:NULL; type:LONGTEXT;" json:"description" binding:"max=1500"`
+	LearnHours      string                  `gorm:"column:learn_hours; default:NULL; type:VARCHAR(45);" json:"learn_hours"`
+	AcademicYear    string                  `gorm:"column:academic_year; default:NULL; type:VARCHAR(45);" json:"academic_year"`
+	CourseLink      string                  `gorm:"column:course_link; default:NULL; type:LONGTEXT;" json:"course_link"`
+	LearningOutcome string                  `gorm:"column:learinig_outcome; default:NULL; type:LONGTEXT;" json:"learning_outcome"`
+	Organization    OrganizationInCourses   `gorm:"foreignKey:OrganizationID;references:OrganizationID" json:"organization"`
+	OrganizationID  int                     `gorm:"column:organization_id" json:"organization_id"`
+	SkillsLevels    []SkillsLevelsInCourses `gorm:"foreignKey:CourseID; References:CourseID;" json:"skills_levels"`
 }
 
 type OrganizationInCourses struct {
-	OrganizationID int    `gorm:"column:organization_id; primaryKey;" json:"organization_id"`
+	OrganizationID int    `gorm:"column:organization_id; primaryKey;" json:"-"`
 	Name           string `gorm:"column:name; not null; type:VARCHAR(255)" json:"name" binding:"max=255"`
 	Description    string `gorm:"column:description; default:NULL; type:LONGTEXT;" json:"description" binding:"max=1500"`
 	ImageUrl       string `gorm:"column:image_url; default:NULL; type:LONGTEXT;" json:"image_url" binding:"max=5000"`
+}
+
+type SkillsLevelsInCourses struct {
+	SkillsLevelsID int            `gorm:"column:skills_levels_id; primaryKey; autoIncrement;" json:"skills_levels_id"`
+	SkillID        *int           `gorm:"column:skill_id;" json:"skill_id"`
+	KnowledgeDesc  string         `gorm:"column:knowledge_desc;" json:"knowledge_desc"`
+	AbilityDesc    string         `gorm:"column:ability_desc;" json:"ability_desc"`
+	LevelsID       int            `gorm:"column:levels_id; not null" json:"levels_id"`
+	CourseID       *int           `gorm:"column:course_id; not null;" json:"-"`
+	CareerID       *int           `gorm:"column:career_id; not null;" json:"-"`
+	Skill          SkillInCourses `gorm:"foreignKey:SkillID;references:SkillID" json:"skill"`
+}
+
+type SkillInCourses struct {
+	SkillID      *int                   `gorm:"column:skill_id;primaryKey" json:"-"`
+	Name         string                 `gorm:"column:name;not null; type:VARCHAR(255);" json:"name" binding:"required,max=255"`
+	Description  string                 `gorm:"column:description; default:NULL; type:LONGTEXT;" json:"description" binding:"max=1500"`
+	ImageUrl     string                 `gorm:"column:image_url; default:NULL; type:LONGTEXT;" json:"image_url" binding:"max=5000"`
+	Type         string                 `gorm:"column:type; default:NULL; type:ENUM('SOFT','HARD');" json:"type" binding:"max=100"`
+	SkillsLevels []SkillsLevelsInSkills `gorm:"foreignKey:SkillID; References:SkillID;" json:"-"`
 }
 
 func (Course) TableName() string {
@@ -31,10 +52,18 @@ func (OrganizationInCourses) TableName() string {
 	return "organizations"
 }
 
+func (SkillsLevelsInCourses) TableName() string {
+	return "skills_levels"
+}
+
+func (SkillInCourses) TableName() string {
+	return "skills"
+}
+
 // GetCourses retrieves all Course records from the database with pagination.
 func GetCourses(db *gorm.DB, page, limit int, courses *[]Course) (pagination Pagination, err error) {
 	offset := (page - 1) * limit
-	err = db.Preload("Organization").Preload("SkillsLevels").Model(&Course{}).
+	err = db.Preload("Organization").Preload("SkillsLevels.Skill").Model(&Course{}).
 		Offset(offset).Limit(limit).
 		Find(&courses).Error
 	if err != nil {
@@ -69,9 +98,7 @@ func CreateCourse(db *gorm.DB, course *Course) (err error) {
 
 // GetCourseById retrieves a Course by its ID from the database.
 func GetCourseById(db *gorm.DB, course *Course, id int) (err error) {
-	err = db.Where("course_id = ?", id).
-		Preload("Organization").
-		Preload("SkillsLevels").
+	err = db.Where("course_id = ?", id).Preload("Organization").Preload("SkillsLevels.Skill").
 		First(course).
 		Error
 	if err != nil {
@@ -82,8 +109,6 @@ func GetCourseById(db *gorm.DB, course *Course, id int) (err error) {
 
 // UpdateCourse updates an existing Course record in the database.
 func UpdateCourse(db *gorm.DB, updatedCourse *Course) (err error) {
-	existingCourse := &Course{}
-
 	// Begin a transaction
 	tx := db.Begin()
 	defer func() {
@@ -93,41 +118,36 @@ func UpdateCourse(db *gorm.DB, updatedCourse *Course) (err error) {
 	}()
 
 	// Check if the course record exists
-	err = tx.Preload("Organization").Preload("SkillsLevels").First(existingCourse, "course_id = ?", updatedCourse.CourseID).Error
+	existingCourse := &Course{}
+	err = tx.Preload("Organization").Preload("SkillsLevels.Skill").First(existingCourse, "course_id = ?", updatedCourse.CourseID).Error
 	if err != nil {
 		tx.Rollback()
 		return err
 	}
 
-	// Update only the specified fields if they are not empty
-	existingCourse.Name = updatedCourse.Name
-	existingCourse.Description = updatedCourse.Description
-	existingCourse.LearnHours = updatedCourse.LearnHours
-	existingCourse.AcademicYear = updatedCourse.AcademicYear
-	existingCourse.CourseLink = updatedCourse.CourseLink
-
-	// Update organization_id only
-	existingCourse.OrganizationID = updatedCourse.Organization.OrganizationID
-
-	db.Save(existingCourse)
-
-	// Clear existing associations within the transaction
-	err = tx.Model(existingCourse).Association("SkillsLevels").Clear()
+	// Delete all existing SkillsLevels records for the specified course
+	err = tx.Where("course_id = ?", existingCourse.CourseID).Delete(&SkillsLevels{}).Error
 	if err != nil {
 		tx.Rollback()
 		return err
 	}
 
-	// Update existing skills_levels with the new ones (if provided)
-	if len(updatedCourse.SkillsLevels) > 0 {
-		err = tx.Model(existingCourse).Association("SkillsLevels").Append(updatedCourse.SkillsLevels)
-		if err != nil {
-			tx.Rollback()
-			return err
-		}
+	// Commit the delete operation
+	if err := tx.Commit().Error; err != nil {
+		return err
 	}
 
-	// Commit the transaction
+	// Begin a new transaction for the update operation
+	tx = db.Begin()
+
+	// Save the updated course
+	err = tx.Save(updatedCourse).Error
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	// Commit the transaction for the update operation
 	if err := tx.Commit().Error; err != nil {
 		return err
 	}

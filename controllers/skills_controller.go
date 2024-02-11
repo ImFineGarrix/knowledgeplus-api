@@ -127,20 +127,13 @@ func (repository *SkillRepo) DeleteSkillById(c *gin.Context) {
 	id, _ := strconv.Atoi(c.Param("id"))
 	var skill models.Skill
 
-	err := repository.Db.Where("skill_id = ?", id).Preload("Careers").Preload("SkillsLevels").First(&skill).Error
+	err := repository.Db.Where("skill_id = ?", id).Preload("SkillsLevels").First(&skill).Error
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			c.AbortWithStatusJSON(http.StatusNotFound, gin.H{"error": "Record not found!"})
 			return
 		}
 
-		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err})
-		return
-	}
-
-	// Delete associated records in careers_skills table
-	err = repository.Db.Exec("DELETE FROM careers_skills WHERE skill_id = ?", id).Error
-	if err != nil {
 		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err})
 		return
 	}

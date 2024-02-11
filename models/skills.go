@@ -5,31 +5,33 @@ import (
 )
 
 type Skill struct {
-	SkillID     int    `gorm:"column:skill_id;primaryKey" json:"skill_id"`
+	SkillID     *int   `gorm:"column:skill_id;primaryKey" json:"skill_id"`
 	Name        string `gorm:"column:name;not null; type:VARCHAR(255);" json:"name" binding:"required,max=255"`
 	Description string `gorm:"column:description; default:NULL; type:LONGTEXT;" json:"description" binding:"max=1500"`
 	ImageUrl    string `gorm:"column:image_url; default:NULL; type:LONGTEXT;" json:"image_url" binding:"max=5000"`
 	Type        string `gorm:"column:type; default:NULL; type:ENUM('SOFT','HARD');" json:"type" binding:"max=100"`
 	// Careers     []CareerInSkills `gorm:"many2many:careers_skills;foreignKey:SkillID;joinForeignKey:SkillID;References:CareerID;joinReferences:CareerID" json:"careers"`
-	Careers      []CareerInSkills `gorm:"many2many:careers_skills;foreignKey:SkillID;joinForeignKey:SkillID;References:CareerID;joinReferences:CareerID" json:"careers"`
-	SkillsLevels []SkillsLevels   `gorm:"foreignKey:SkillID; References:SkillID;" json:"skills_levels"`
+	SkillsLevels []SkillsLevelsInSkills `gorm:"foreignKey:SkillID; References:SkillID;" json:"skills_levels"`
 	// Levels     []Level   `gorm:"foreignKey:LevelID"`
 }
 
-type CareerInSkills struct {
-	CareerID    int64  `gorm:"column:career_id;primaryKey;autoIncrement;" json:"career_id"`
-	Name        string `gorm:"column:name; not null; type:VARCHAR(255)" json:"name" binding:"required,max=255"`
-	Description string `gorm:"column:description; default:NULL; type:LONGTEXT;"  json:"description" binding:"max=1500"`
+type UpdateSkillModels struct {
+	Name         string         `gorm:"column:name; type:VARCHAR(255);" json:"name" binding:"max=255"`
+	Description  string         `gorm:"column:description; default:NULL; type:LONGTEXT;" json:"description" binding:"max=1500"`
+	ImageUrl     string         `gorm:"column:image_url; default:NULL; type:LONGTEXT;" json:"image_url" binding:"max=5000"`
+	Type         string         `gorm:"column:type; default:NULL; type:ENUM('SOFT','HARD');" json:"type" binding:"max=100"`
+	SkillsLevels []SkillsLevels `gorm:"foreignKey:SkillID" json:"skills_levels"`
+	// LevelID     int    `json:"level_id" binding:"required"`
 }
 
-type UpdateSkillModels struct {
-	Name         string           `gorm:"column:name; type:VARCHAR(255);" json:"name" binding:"max=255"`
-	Description  string           `gorm:"column:description; default:NULL; type:LONGTEXT;" json:"description" binding:"max=1500"`
-	ImageUrl     string           `gorm:"column:image_url; default:NULL; type:LONGTEXT;" json:"image_url" binding:"max=5000"`
-	Type         string           `gorm:"column:type; default:NULL; type:ENUM('SOFT','HARD');" json:"type" binding:"max=100"`
-	Careers      []CareerInSkills `gorm:"many2many:careers_skills;foreignKey:SkillID;joinForeignKey:SkillID;References:CareerID;joinReferences:CareerID" json:"careers"`
-	SkillsLevels []SkillsLevels   `gorm:"foreignKey:SkillID" json:"skills_levels"`
-	// LevelID     int    `json:"level_id" binding:"required"`
+type SkillsLevelsInSkills struct {
+	SkillsLevelsID int    `gorm:"column:skills_levels_id; primaryKey; autoIncrement;" json:"skills_levels_id"`
+	SkillID        *int   `gorm:"column:skill_id;" json:"skill_id"`
+	KnowledgeDesc  string `gorm:"column:knowledge_desc;" json:"knowledge_desc"`
+	AbilityDesc    string `gorm:"column:ability_desc;" json:"ability_desc"`
+	LevelsID       int    `gorm:"column:levels_id; not null" json:"levels_id"`
+	CourseID       *int   `gorm:"column:course_id; not null;" json:"-"`
+	CareerID       *int   `gorm:"column:career_id; not null;" json:"-"`
 }
 
 type Levels struct {
@@ -41,14 +43,14 @@ func (Skill) Tablename() string {
 	return "skills"
 }
 
-func (CareerInSkills) TableName() string {
-	return "careers"
+func (SkillsLevelsInSkills) TableName() string {
+	return "skills_levels"
 }
 
 // GetSkills retrieves all Skill records from the database with pagination.
 func GetSkills(db *gorm.DB, page, limit int, skills *[]Skill) (pagination Pagination, err error) {
 	offset := (page - 1) * limit
-	err = db.Preload("Careers").Preload("SkillsLevels").Model(&Skill{}).
+	err = db.Preload("SkillsLevels").Model(&Skill{}).
 		Offset(offset).Limit(limit).
 		Find(&skills).Error
 	if err != nil {
@@ -74,7 +76,7 @@ func GetSkills(db *gorm.DB, page, limit int, skills *[]Skill) (pagination Pagina
 
 // GetSkillById retrieves a Skill by its ID from the database.
 func GetSkillById(db *gorm.DB, Skill *Skill, id int) (err error) {
-	err = db.Where("skill_id = ?", id).Preload("Careers").Preload("SkillsLevels").First(Skill).Error
+	err = db.Where("skill_id = ?", id).Preload("SkillsLevels").First(Skill).Error
 	if err != nil {
 		return err
 	}
@@ -92,7 +94,6 @@ func CreateSkill(db *gorm.DB, skill *Skill) (err error) {
 	return nil
 }
 
-// ยังไม่ได้เช็คอัพเดตว่าใช้ได้มั้ย
 // UpdateSkill updates an existing Skill record in the database.
 func UpdateSkill(db *gorm.DB, updatedSkill *Skill) (err error) {
 	existingSkill := &Skill{}
@@ -106,73 +107,35 @@ func UpdateSkill(db *gorm.DB, updatedSkill *Skill) (err error) {
 	}()
 
 	// Check if the skill record exists
-	err = tx.Preload("Careers").Preload("SkillsLevels").First(existingSkill, "skill_id = ?", updatedSkill.SkillID).Error
+	err = tx.Preload("SkillsLevels").First(existingSkill, "skill_id = ?", updatedSkill.SkillID).Error
 	if err != nil {
 		tx.Rollback()
 		return err
 	}
 
-	// // Update only the specified fields if they are not empty
-	// if updatedSkill.Name != "" {
-	// 	existingSkill.Name = updatedSkill.Name
-	// }
-
-	// if updatedSkill.Description != "" {
-	// 	existingSkill.Description = updatedSkill.Description
-	// }
-
-	// if updatedSkill.ImageUrl != "" {
-	// 	existingSkill.ImageUrl = updatedSkill.ImageUrl
-	// }
-
-	// if updatedSkill.Type != "" {
-	// 	existingSkill.Type = updatedSkill.Type
-	// }
-
-	// fmt.Println(existingSkill.SkillID)
-	// // existingSkill.SkillID = updatedSkill.SkillID
-
-	// err = tx.Model(existingSkill).Association("SkillLevels").Clear()
-	// if err != nil {
-	// 	tx.Rollback()
-	// 	return err
-	// }
-
-	db.Save(updatedSkill)
-
-	// Clear existing associations within the transaction
-	err = tx.Model(existingSkill).Association("Careers").Clear()
+	// Delete all existing SkillsLevels records for the specified skill
+	err = tx.Where("skill_id = ?", existingSkill.SkillID).Delete(&SkillsLevels{}).Error
 	if err != nil {
 		tx.Rollback()
 		return err
 	}
 
-	// Update existing groups with the new one (if provided)
-	if len(updatedSkill.Careers) > 0 {
-		err = tx.Model(existingSkill).Association("Careers").Append(updatedSkill.Careers)
-		if err != nil {
-			tx.Rollback()
-			return err
-		}
+	// Commit the delete operation
+	if err := tx.Commit().Error; err != nil {
+		return err
 	}
 
-	// Clear existing associations within the transaction
-	err = tx.Model(existingSkill).Association("SkillsLevels").Clear()
+	// Begin a new transaction for the update operation
+	tx = db.Begin()
+
+	// Save the updated skill
+	err = tx.Save(updatedSkill).Error
 	if err != nil {
 		tx.Rollback()
 		return err
 	}
 
-	// Update existing groups with the new ones (if provided)
-	if len(updatedSkill.SkillsLevels) > 0 {
-		err = tx.Model(existingSkill).Association("SkillsLevels").Append(updatedSkill.SkillsLevels)
-		if err != nil {
-			tx.Rollback()
-			return err
-		}
-	}
-
-	// Commit the transaction
+	// Commit the transaction for the update operation
 	if err := tx.Commit().Error; err != nil {
 		return err
 	}
