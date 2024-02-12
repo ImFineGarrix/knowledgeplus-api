@@ -12,7 +12,7 @@ func SetupRoutes(defaultPath *gin.RouterGroup) {
 	CareerRepo := controllers.NewCareerRepo()
 	// CategoriesRepo := controllers.NewCategoriesRepo()
 	SkillRepo := controllers.NewSkillRepo()
-	// LevelsRepo := controllers.NewLevelsRepo()
+	LevelsRepo := controllers.NewLevelsRepo()
 	CourseRepo := controllers.NewCourseRepo()
 	OrganizationRepo := controllers.NewOrganizationsRepo()
 
@@ -23,20 +23,14 @@ func SetupRoutes(defaultPath *gin.RouterGroup) {
 	defaultPath.PUT("/careers/:id", CareerRepo.UpdateCareer)
 	defaultPath.DELETE("/careers/:id", CareerRepo.DeleteCareer)
 
-	// defaultPath.GET("/categories", CategoriesRepo.GetCategories)
-	// defaultPath.GET("/categories/:id", CategoriesRepo.GetCategoryById)
-	// defaultPath.POST("/categories", CategoriesRepo.CreateCategory)
-	// defaultPath.PUT("/categories/:id", CategoriesRepo.UpdateCategory)
-	// defaultPath.DELETE("/categories/:id", CategoriesRepo.DeleteCategoryById)
-
 	defaultPath.GET("/skills", SkillRepo.GetSkills)
 	defaultPath.GET("/skills/:id", SkillRepo.GetSkillById)
 	defaultPath.POST("/skills", SkillRepo.CreateSkill)
 	defaultPath.PUT("/skills/:id", SkillRepo.UpdateSkill)
 	defaultPath.DELETE("/skills/:id", SkillRepo.DeleteSkillById)
 
-	// defaultPath.GET("/levels", LevelsRepo.GetLevels)
-	// defaultPath.GET("/levels/:id", LevelsRepo.GetLevelById)
+	defaultPath.GET("/levels", LevelsRepo.GetLevels)
+	defaultPath.GET("/levels/:id", LevelsRepo.GetLevelById)
 
 	// defaultPath.GET("/courses", CourseRepo.GetCourses)
 	// defaultPath.GET("/courses/:id", CourseRepo.GetCourse)

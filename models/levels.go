@@ -6,7 +6,7 @@ import (
 
 type Level struct {
 	LevelID int    `gorm:"column:level_id; primaryKey;" json:"level_id"`
-	Name    string `gorm:"column:name; not null;" json:"name"`
+	Level   string `gorm:"column:level; not null;" json:"level"`
 }
 
 func (Level) TableName() string {
