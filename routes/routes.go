@@ -7,6 +7,13 @@ import (
 )
 
 func SetupRoutes(defaultPath *gin.RouterGroup) {
+	// Initialize middleware
+	// authMiddleware := middleware.AuthMiddleware()
+
+	defaultPath.GET("/auth/login", controllers.NewAuthRepo().LoginHandler)
+	// defaultPath.Use(authMiddleware).POST("/auth/register", controllers.NewAuthRepo().CreateUserHandler)
+	defaultPath.POST("/auth/register", controllers.NewAuthRepo().CreateUserHandler)
+
 	SectionRepo := controllers.NewSectionRepo()
 	GroupRepo := controllers.NewGroupRepo()
 	CareerRepo := controllers.NewCareerRepo()
