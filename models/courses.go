@@ -17,6 +17,19 @@ type Course struct {
 	SkillsLevels    []SkillsLevelsInCourses `gorm:"foreignKey:CourseID; References:CourseID;" json:"skills_levels"`
 }
 
+type CourseWithoutSkillLevels struct {
+	CourseID        int                     `gorm:"column:course_id;primaryKey" json:"course_id"`
+	Name            string                  `gorm:"column:name;not null; type:VARCHAR(255);" json:"name" binding:"required,max=255"`
+	Description     string                  `gorm:"column:description; default:NULL; type:LONGTEXT;" json:"description" binding:"max=1500"`
+	LearnHours      string                  `gorm:"column:learn_hours; default:NULL; type:VARCHAR(45);" json:"learn_hours"`
+	AcademicYear    string                  `gorm:"column:academic_year; default:NULL; type:VARCHAR(45);" json:"academic_year"`
+	CourseLink      string                  `gorm:"column:course_link; default:NULL; type:LONGTEXT;" json:"course_link"`
+	LearningOutcome string                  `gorm:"column:learinig_outcome; default:NULL; type:LONGTEXT;" json:"learning_outcome"`
+	Organization    OrganizationInCourses   `gorm:"foreignKey:OrganizationID;references:OrganizationID" json:"organization"`
+	OrganizationID  int                     `gorm:"column:organization_id" json:"organization_id"`
+	SkillsLevels    []SkillsLevelsInCourses `gorm:"foreignKey:CourseID; References:CourseID;" json:"-"`
+}
+
 type OrganizationInCourses struct {
 	OrganizationID int    `gorm:"column:organization_id; primaryKey;" json:"-"`
 	Name           string `gorm:"column:name; not null; type:VARCHAR(255)" json:"name" binding:"max=255"`
@@ -48,6 +61,10 @@ func (Course) TableName() string {
 	return "courses"
 }
 
+func (CourseWithoutSkillLevels) TableName() string {
+	return "courses"
+}
+
 func (OrganizationInCourses) TableName() string {
 	return "organizations"
 }
@@ -73,6 +90,80 @@ func GetCourses(db *gorm.DB, page, limit int, courses *[]Course) (pagination Pag
 	// Calculate total pages
 	var totalCount int64
 	if err := db.Model(&Course{}).Count(&totalCount).Error; err != nil {
+		return Pagination{}, err
+	}
+
+	totalPages := int(totalCount)
+
+	pagination = Pagination{
+		Page:  page,
+		Total: totalPages,
+		Limit: limit,
+	}
+
+	return pagination, nil
+}
+
+// GetCoursesBySkillId retrieves courses based on the provided SkillID with pagination.
+func GetCoursesBySkillId(db *gorm.DB, skillID, page, limit int, courses *[]Course) (pagination Pagination, err error) {
+	offset := (page - 1) * limit
+	err = db.
+		Preload("Organization").
+		Preload("SkillsLevels.Skill").
+		Joins("JOIN skills_levels ON courses.course_id = skills_levels.course_id").
+		Where("skills_levels.skill_id = ?", skillID).
+		Model(&Course{}).
+		Offset(offset).Limit(limit).
+		Find(courses).Error
+	if err != nil {
+		return Pagination{}, err
+	}
+
+	// Count total courses for pagination
+	var totalCount int64
+	if err := db.Model(&Course{}).
+		Preload("Organization").
+		Preload("SkillsLevels.Skill").
+		Joins("JOIN skills_levels ON courses.course_id = skills_levels.course_id").
+		Where("skills_levels.skill_id = ?", skillID).
+		Count(&totalCount).Error; err != nil {
+		return Pagination{}, err
+	}
+
+	totalPages := int(totalCount)
+
+	pagination = Pagination{
+		Page:  page,
+		Total: totalPages,
+		Limit: limit,
+	}
+
+	return pagination, nil
+}
+
+// GetCoursesByCareerId retrieves courses based on the provided CareerID with pagination.
+func GetCoursesByCareerId(db *gorm.DB, careerID, page, limit int, courses *[]CourseWithoutSkillLevels) (pagination Pagination, err error) {
+	offset := (page - 1) * limit
+	err = db.
+		Preload("Organization").
+		Preload("SkillsLevels.Skill").
+		Joins("JOIN skills_levels ON courses.course_id = skills_levels.course_id").
+		Where("skills_levels.career_id = ?", careerID).
+		Model(&CourseWithoutSkillLevels{}).
+		Offset(offset).Limit(limit).
+		Find(courses).Error
+	if err != nil {
+		return Pagination{}, err
+	}
+
+	// Count total courses for pagination
+	var totalCount int64
+	if err := db.Model(&CourseWithoutSkillLevels{}).
+		Preload("Organization").
+		Preload("SkillsLevels.Skill").
+		Joins("JOIN skills_levels ON courses.course_id = skills_levels.course_id").
+		Where("skills_levels.career_id = ?", careerID).
+		Count(&totalCount).Error; err != nil {
 		return Pagination{}, err
 	}
 

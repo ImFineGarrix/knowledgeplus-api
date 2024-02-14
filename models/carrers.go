@@ -31,8 +31,8 @@ type SkillsLevelsInCareers struct {
 	KnowledgeDesc  string          `gorm:"column:knowledge_desc;" json:"knowledge_desc"`
 	AbilityDesc    string          `gorm:"column:ability_desc;" json:"ability_desc"`
 	LevelsID       int             `gorm:"column:levels_id; not null" json:"levels_id"`
-	CourseID       *int            `gorm:"column:course_id; not null;" json:"course_id"`
-	CareerID       *int            `gorm:"column:career_id; not null;" json:"career_id"`
+	CourseID       *int            `gorm:"column:course_id; not null;" json:"-"`
+	CareerID       *int            `gorm:"column:career_id; not null;" json:"-"`
 	Skill          SkillInCareers  `gorm:"foreignKey:SkillID;references:SkillID" json:"skill"`
 	Course         CourseInCareers `gorm:"foreignKey:CourseID;references:CourseID" json:"courses"`
 }
@@ -114,39 +114,74 @@ func GetCareers(db *gorm.DB, page, limit int) (careers []Career, pagination Pagi
 	return careers, pagination, nil
 }
 
-//ยังไม่ใช้
-// // GetCareersWithHaveCategories retrieves careers where category_id in many-to-many is not null with pagination.
-// func GetCareersWithHaveCategories(db *gorm.DB, page, limit int) (careers []Career, pagination Pagination, err error) {
-// 	offset := (page - 1) * limit
-// 	err = db.Joins("JOIN categories_careers ON careers.career_id = categories_careers.career_id").
-// 		Where("categories_careers.category_id IS NOT NULL").
-// 		Preload("Categories").Preload("Skills").
-// 		Offset(offset).Limit(limit).
-// 		Find(&careers).Error
-// 	if err != nil {
-// 		return nil, Pagination{}, err
-// 	}
+// GetCareersByCourseId retrieves careers based on the provided CourseID with pagination.
+func GetCareersByCourseId(db *gorm.DB, courseID, page, limit int) (careers []Career, pagination Pagination, err error) {
+	offset := (page - 1) * limit
+	err = db.
+		Preload("SkillsLevels.Skill").
+		Preload("SkillsLevels.Course.Organization").
+		Joins("JOIN skills_levels ON careers.career_id = skills_levels.career_id").
+		Where("skills_levels.course_id = ?", courseID).
+		Offset(offset).Limit(limit).
+		Find(&careers).Error
+	if err != nil {
+		return nil, Pagination{}, err
+	}
 
-// 	// Calculate total pages
-// 	var totalCount int64
-// 	if err := db.Joins("JOIN categories_careers ON careers.career_id = categories_careers.career_id").
-// 		Where("categories_careers.category_id IS NOT NULL").
-// 		Model(&Career{}).Count(&totalCount).Error; err != nil {
-// 		return nil, Pagination{}, err
-// 	}
+	// Count total careers for pagination
+	var totalCount int64
+	if err := db.Model(&Career{}).
+		Joins("JOIN skills_levels ON careers.career_id = skills_levels.career_id").
+		Where("skills_levels.course_id = ?", courseID).
+		Count(&totalCount).Error; err != nil {
+		return nil, Pagination{}, err
+	}
 
-// 	totalPages := int(totalCount)
+	totalPages := int(totalCount)
 
-// 	pagination = Pagination{
-// 		Page:  page,
-// 		Total: totalPages,
-// 		Limit: limit,
-// 	}
+	pagination = Pagination{
+		Page:  page,
+		Total: totalPages,
+		Limit: limit,
+	}
 
-// 	return careers, pagination, nil
-// }
+	return careers, pagination, nil
+}
 
-// Get By id ให้โชว์ Skill อย่างเดียว(ทำหลัง Course เสร็จ)
+// GetCareersBySkillId retrieves careers based on the provided SkillID with pagination.
+func GetCareersBySkillId(db *gorm.DB, skillID, page, limit int) (careers []Career, pagination Pagination, err error) {
+	offset := (page - 1) * limit
+	err = db.
+		Preload("SkillsLevels.Skill").
+		Preload("SkillsLevels.Course.Organization").
+		Joins("JOIN skills_levels ON careers.career_id = skills_levels.career_id").
+		Where("skills_levels.skill_id = ?", skillID).
+		Offset(offset).Limit(limit).
+		Find(&careers).Error
+	if err != nil {
+		return nil, Pagination{}, err
+	}
+
+	// Count total careers for pagination
+	var totalCount int64
+	if err := db.Model(&Career{}).
+		Joins("JOIN skills_levels ON careers.career_id = skills_levels.career_id").
+		Where("skills_levels.skill_id = ?", skillID).
+		Count(&totalCount).Error; err != nil {
+		return nil, Pagination{}, err
+	}
+
+	totalPages := int(totalCount)
+
+	pagination = Pagination{
+		Page:  page,
+		Total: totalPages,
+		Limit: limit,
+	}
+
+	return careers, pagination, nil
+}
+
 // GetCareerById retrieves a Career by its ID from the database.
 func GetCareerById(db *gorm.DB, Career *Career, id int) (err error) {
 	err = db.Where("career_id = ?", id).Preload("SkillsLevels.Skill").Preload("SkillsLevels.Course.Organization").First(Career).Error

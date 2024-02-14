@@ -10,9 +10,9 @@ func SetupRoutes(defaultPath *gin.RouterGroup) {
 	// Initialize middleware
 	// authMiddleware := middleware.AuthMiddleware()
 
-	defaultPath.GET("/auth/login", controllers.NewAuthRepo().LoginHandler)
+	defaultPath.POST("/auth/login", controllers.NewAuthRepo().LoginHandler)
 	// defaultPath.Use(authMiddleware).POST("/auth/register", controllers.NewAuthRepo().CreateUserHandler)
-	defaultPath.POST("/auth/register", controllers.NewAuthRepo().CreateUserHandler)
+	defaultPath.POST("/admins", controllers.NewAuthRepo().CreateUserHandler)
 
 	SectionRepo := controllers.NewSectionRepo()
 	GroupRepo := controllers.NewGroupRepo()
@@ -25,12 +25,16 @@ func SetupRoutes(defaultPath *gin.RouterGroup) {
 
 	defaultPath.POST("/careers", CareerRepo.CreateCareer)
 	defaultPath.GET("/careers", CareerRepo.GetCareers)
+	defaultPath.GET("/careers-by-course/:course_id", CareerRepo.GetCareersByCourseId)
+	defaultPath.GET("/careers-by-skill/:skill_id", CareerRepo.GetCareersBySkillId)
 	// defaultPath.GET("/careers_have_categories", CareerRepo.GetCareersWithHaveCategories)
 	defaultPath.GET("/careers/:id", CareerRepo.GetCareer)
 	defaultPath.PUT("/careers/:id", CareerRepo.UpdateCareer)
 	defaultPath.DELETE("/careers/:id", CareerRepo.DeleteCareer)
 
 	defaultPath.GET("/skills", SkillRepo.GetSkills)
+	defaultPath.GET("/skills-by-course/:course_id", SkillRepo.GetSkillsByCourseId)
+	defaultPath.GET("/skills-by-career/:career_id", SkillRepo.GetSkillsByCareerId)
 	defaultPath.GET("/skills/:id", SkillRepo.GetSkillById)
 	defaultPath.POST("/skills", SkillRepo.CreateSkill)
 	defaultPath.PUT("/skills/:id", SkillRepo.UpdateSkill)
@@ -55,6 +59,7 @@ func SetupRoutes(defaultPath *gin.RouterGroup) {
 	defaultPath.DELETE("/sections/:id", SectionRepo.DeleteSectionById)
 
 	defaultPath.GET("/groups", GroupRepo.GetGroups)
+	defaultPath.GET("/groups-with-section", GroupRepo.GetAllGroupsHaveSection)
 	defaultPath.GET("/groups/:id", GroupRepo.GetGroupById)
 	defaultPath.POST("/groups", GroupRepo.CreateGroup)
 	defaultPath.PUT("/groups/:id", GroupRepo.UpdateGroup)
@@ -62,6 +67,8 @@ func SetupRoutes(defaultPath *gin.RouterGroup) {
 
 	defaultPath.GET("/courses", CourseRepo.GetCourses)
 	defaultPath.GET("/courses/:id", CourseRepo.GetCourseById)
+	defaultPath.GET("/courses-by-skill/:skill_id", CourseRepo.GetCoursesBySkillId)
+	defaultPath.GET("/courses-by-career/:career_id", CourseRepo.GetCoursesByCareerId)
 	defaultPath.POST("/courses", CourseRepo.CreateCourse)
 	defaultPath.PUT("/courses/:id", CourseRepo.UpdateCourse)
 	defaultPath.DELETE("/courses/:id", CourseRepo.DeleteCourseById)

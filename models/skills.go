@@ -74,6 +74,78 @@ func GetSkills(db *gorm.DB, page, limit int, skills *[]Skill) (pagination Pagina
 	return pagination, nil
 }
 
+// GetSkillsByCourseId retrieves all Skill records associated with a specific CourseID from the database with pagination.
+func GetSkillsByCourseId(db *gorm.DB, courseID, page, limit int, skills *[]Skill) (pagination Pagination, err error) {
+	offset := (page - 1) * limit
+
+	// Assuming there's a many-to-many relationship between skills and courses through skills_levels
+	err = db.
+		Preload("SkillsLevels").
+		Joins("JOIN skills_levels ON skills.skill_id = skills_levels.skill_id").
+		Where("skills_levels.course_id = ?", courseID).
+		Offset(offset).Limit(limit).
+		Find(skills).Error
+	if err != nil {
+		return Pagination{}, err
+	}
+
+	// Calculate total pages
+	var totalCount int64
+	if err := db.
+		Joins("JOIN skills_levels ON skills.skill_id = skills_levels.skill_id").
+		Where("skills_levels.course_id = ?", courseID).
+		Model(&Skill{}).
+		Count(&totalCount).Error; err != nil {
+		return Pagination{}, err
+	}
+
+	totalPages := int(totalCount)
+
+	pagination = Pagination{
+		Page:  page,
+		Total: totalPages,
+		Limit: limit,
+	}
+
+	return pagination, nil
+}
+
+// GetSkillsByCareerId retrieves skills based on the provided CareerID with pagination.
+func GetSkillsByCareerId(db *gorm.DB, careerID, page, limit int, skills *[]SkillInCourses) (pagination Pagination, err error) {
+	offset := (page - 1) * limit
+
+	// Assuming there's a many-to-many relationship between skills and courses through skills_levels
+	err = db.
+		Preload("SkillsLevels").
+		Joins("JOIN skills_levels ON skills.skill_id = skills_levels.skill_id").
+		Where("skills_levels.career_id = ?", careerID).
+		Offset(offset).Limit(limit).
+		Find(skills).Error
+	if err != nil {
+		return Pagination{}, err
+	}
+
+	// Calculate total pages
+	var totalCount int64
+	if err := db.
+		Joins("JOIN skills_levels ON skills.skill_id = skills_levels.skill_id").
+		Where("skills_levels.career_id = ?", careerID).
+		Model(&Skill{}).
+		Count(&totalCount).Error; err != nil {
+		return Pagination{}, err
+	}
+
+	totalPages := int(totalCount)
+
+	pagination = Pagination{
+		Page:  page,
+		Total: totalPages,
+		Limit: limit,
+	}
+
+	return pagination, nil
+}
+
 // GetSkillById retrieves a Skill by its ID from the database.
 func GetSkillById(db *gorm.DB, Skill *Skill, id int) (err error) {
 	err = db.Where("skill_id = ?", id).Preload("SkillsLevels").First(Skill).Error

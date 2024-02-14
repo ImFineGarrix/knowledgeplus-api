@@ -67,6 +67,76 @@ func (repository *CourseRepo) GetCourseById(c *gin.Context) {
 	c.JSON(http.StatusOK, course)
 }
 
+// GetCoursesBySkillId retrieves courses based on the provided SkillID with pagination.
+func (repository *CourseRepo) GetCoursesBySkillId(c *gin.Context) {
+	skillID, err := strconv.Atoi(c.Param("skill_id"))
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid SkillID"})
+		return
+	}
+
+	var (
+		courses    []models.Course
+		pagination models.Pagination
+	)
+
+	page, err := strconv.Atoi(c.Query("page"))
+	if err != nil || page <= 0 {
+		page = 1
+	}
+
+	limit, err := strconv.Atoi(c.Query("limit"))
+	if err != nil || limit <= 0 {
+		limit = 10 // set a default limit
+	}
+
+	pagination, err = models.GetCoursesBySkillId(repository.Db, skillID, page, limit, &courses)
+	if err != nil {
+		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"courses":    courses,
+		"pagination": pagination,
+	})
+}
+
+// GetCoursesByCareerId retrieves courses based on the provided CareerID with pagination.
+func (repository *CourseRepo) GetCoursesByCareerId(c *gin.Context) {
+	careerID, err := strconv.Atoi(c.Param("career_id"))
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid CareerID"})
+		return
+	}
+
+	var (
+		courses    []models.CourseWithoutSkillLevels
+		pagination models.Pagination
+	)
+
+	page, err := strconv.Atoi(c.Query("page"))
+	if err != nil || page <= 0 {
+		page = 1
+	}
+
+	limit, err := strconv.Atoi(c.Query("limit"))
+	if err != nil || limit <= 0 {
+		limit = 10 // set a default limit
+	}
+
+	pagination, err = models.GetCoursesByCareerId(repository.Db, careerID, page, limit, &courses)
+	if err != nil {
+		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"courses":    courses,
+		"pagination": pagination,
+	})
+}
+
 // CreateCourse creates a new Course record.
 func (repository *CourseRepo) CreateCourse(c *gin.Context) {
 	var course models.Course

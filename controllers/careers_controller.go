@@ -51,14 +51,13 @@ func (repository *CareerRepo) GetCareers(c *gin.Context) {
 	})
 }
 
-// get Careers with categories and pagination
-func (repository *CareerRepo) GetCareersWithHaveCategories(c *gin.Context) {
-	var (
-		careerIDs  []uint
-		careers    []models.Career
-		pagination models.Pagination
-		err        error
-	)
+// GetCareersByCourseId retrieves careers based on the provided CourseID with pagination.
+func (repository *CareerRepo) GetCareersByCourseId(c *gin.Context) {
+	courseID, err := strconv.Atoi(c.Param("course_id"))
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid CourseID"})
+		return
+	}
 
 	page, err := strconv.Atoi(c.Query("page"))
 	if err != nil || page <= 0 {
@@ -70,47 +69,40 @@ func (repository *CareerRepo) GetCareersWithHaveCategories(c *gin.Context) {
 		limit = 10 // set a default limit
 	}
 
-	// Query distinct career IDs
-	err = repository.Db.
-		Model(&models.Career{}).
-		Select("DISTINCT career_id").
-		Limit(limit).
-		Offset((page-1)*limit).
-		Pluck("career_id", &careerIDs).
-		Error
+	careers, pagination, err := models.GetCareersByCourseId(repository.Db, courseID, page, limit)
 	if err != nil {
 		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 
-	// Query complete careers based on distinct IDs
-	err = repository.Db.
-		Preload("Categories").
-		Preload("Skills").
-		Where("career_id IN ?", careerIDs).
-		Find(&careers).
-		Error
+	c.JSON(http.StatusOK, gin.H{
+		"careers":    careers,
+		"pagination": pagination,
+	})
+}
+
+// GetCareersBySkillId retrieves careers based on the provided SkillID with pagination.
+func (repository *CareerRepo) GetCareersBySkillId(c *gin.Context) {
+	skillID, err := strconv.Atoi(c.Param("skill_id"))
 	if err != nil {
-		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid SkillID"})
 		return
 	}
 
-	// Count total careers (ignoring pagination)
-	var totalCareers int64
-	err = repository.Db.Model(&models.Career{}).Distinct("career_id").Count(&totalCareers).Error
+	page, err := strconv.Atoi(c.Query("page"))
+	if err != nil || page <= 0 {
+		page = 1
+	}
+
+	limit, err := strconv.Atoi(c.Query("limit"))
+	if err != nil || limit <= 0 {
+		limit = 10 // set a default limit
+	}
+
+	careers, pagination, err := models.GetCareersBySkillId(repository.Db, skillID, page, limit)
 	if err != nil {
 		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
-	}
-
-	// Convert totalCareers to int
-	totalCareersInt := int(totalCareers)
-
-	// Create pagination information
-	pagination = models.Pagination{
-		Page:  page,
-		Total: totalCareersInt,
-		Limit: limit,
 	}
 
 	c.JSON(http.StatusOK, gin.H{

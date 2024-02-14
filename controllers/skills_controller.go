@@ -51,6 +51,78 @@ func (repository *SkillRepo) GetSkills(c *gin.Context) {
 	})
 }
 
+// GetSkillsByCourseId retrieves skills associated with a specific CourseID with pagination.
+func (repository *SkillRepo) GetSkillsByCourseId(c *gin.Context) {
+	courseID, err := strconv.Atoi(c.Param("course_id"))
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid CourseID"})
+		return
+	}
+
+	var (
+		skills     []models.Skill
+		pagination models.Pagination
+	)
+
+	page, err := strconv.Atoi(c.Query("page"))
+	if err != nil || page <= 0 {
+		page = 1
+	}
+
+	limit, err := strconv.Atoi(c.Query("limit"))
+	if err != nil || limit <= 0 {
+		limit = 10 // set a default limit
+	}
+
+	pagination, err = models.GetSkillsByCourseId(repository.Db, courseID, page, limit, &skills)
+	if err != nil {
+		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"skills":     skills,
+		"pagination": pagination,
+	})
+}
+
+// Add the following function to your skill_controller.go file
+
+// GetSkillsByCareerId retrieves skills based on the provided CareerID with pagination.
+func (repository *SkillRepo) GetSkillsByCareerId(c *gin.Context) {
+	careerID, err := strconv.Atoi(c.Param("career_id"))
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid CourseID"})
+		return
+	}
+
+	var (
+		skills     []models.Skill
+		pagination models.Pagination
+	)
+
+	page, err := strconv.Atoi(c.Query("page"))
+	if err != nil || page <= 0 {
+		page = 1
+	}
+
+	limit, err := strconv.Atoi(c.Query("limit"))
+	if err != nil || limit <= 0 {
+		limit = 10 // set a default limit
+	}
+
+	pagination, err = models.GetSkillsByCourseId(repository.Db, careerID, page, limit, &skills)
+	if err != nil {
+		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"skills":     skills,
+		"pagination": pagination,
+	})
+}
+
 // get Skills by id
 func (repository *SkillRepo) GetSkillById(c *gin.Context) {
 	id, _ := strconv.Atoi(c.Param("id"))

@@ -49,6 +49,19 @@ func Getgroups(db *gorm.DB, group *[]Group) (err error) {
 	return nil
 }
 
+// Getgroups retrieves all group records from the database with optional filtering based on sections.
+func GetgroupsHaveSection(db *gorm.DB, group *[]Group, filterGroupsBySections bool) (err error) {
+	query := db.Preload("Sections").Preload("Careers")
+	query = query.Joins("JOIN sections_groups ON sections_groups.group_id = groups.group_id").
+		Group("groups.group_id").
+		Having("COUNT(sections_groups.section_id) > 0")
+	err = query.Find(group).Error
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
 // GetgroupById retrieves a group by its ID from the database.
 func GetgroupById(db *gorm.DB, group *Group, id int) (err error) {
 	err = db.Where("group_id = ?", id).Preload("Sections").Preload("Careers").First(group).Error

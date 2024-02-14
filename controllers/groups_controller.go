@@ -34,6 +34,19 @@ func (repository *GroupRepo) GetGroups(c *gin.Context) {
 	c.JSON(http.StatusOK, groups)
 }
 
+// GetAllGroupsHaveSection retrieves all groups from the database where each group must have at least one section.
+func (repository *GroupRepo) GetAllGroupsHaveSection(c *gin.Context) {
+	var groups []models.Group
+
+	err := models.Getgroups(repository.Db, &groups) // Set to true to filter groups with sections
+	if err != nil {
+		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err})
+		return
+	}
+
+	c.JSON(http.StatusOK, groups)
+}
+
 // GetGroupById retrieves a Group by its ID from the database.
 func (repository *GroupRepo) GetGroupById(c *gin.Context) {
 	id, _ := strconv.Atoi(c.Param("id"))
