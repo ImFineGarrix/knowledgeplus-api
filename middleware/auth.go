@@ -2,12 +2,13 @@ package middleware
 
 import (
 	"net/http"
+	"os"
 
 	"github.com/dgrijalva/jwt-go"
 	"github.com/gin-gonic/gin"
 )
 
-var secretKey = "cp23sj2-knowledgeplus"
+var secretKey = os.Getenv("SECRET_KEY")
 
 func AuthMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {

@@ -12,7 +12,7 @@ func SetupRoutes(defaultPath *gin.RouterGroup) {
 
 	defaultPath.POST("/auth/login", controllers.NewAuthRepo().LoginHandler)
 	// defaultPath.Use(authMiddleware).POST("/auth/register", controllers.NewAuthRepo().CreateUserHandler)
-	defaultPath.POST("/admins", controllers.NewAuthRepo().CreateUserHandler)
+	// defaultPath.POST("/admins", controllers.NewAuthRepo().CreateUserHandler)
 
 	SectionRepo := controllers.NewSectionRepo()
 	GroupRepo := controllers.NewGroupRepo()
@@ -22,6 +22,7 @@ func SetupRoutes(defaultPath *gin.RouterGroup) {
 	LevelsRepo := controllers.NewLevelsRepo()
 	CourseRepo := controllers.NewCourseRepo()
 	OrganizationRepo := controllers.NewOrganizationsRepo()
+	UserRepo := controllers.NewUserRepo()
 
 	defaultPath.POST("/careers", CareerRepo.CreateCareer)
 	defaultPath.GET("/careers", CareerRepo.GetCareers)
@@ -72,5 +73,11 @@ func SetupRoutes(defaultPath *gin.RouterGroup) {
 	defaultPath.POST("/courses", CourseRepo.CreateCourse)
 	defaultPath.PUT("/courses/:id", CourseRepo.UpdateCourse)
 	defaultPath.DELETE("/courses/:id", CourseRepo.DeleteCourseById)
+
+	defaultPath.POST("/admins", UserRepo.CreateUser)
+	defaultPath.GET("/admins", UserRepo.GetUsers)
+	defaultPath.GET("/admins/:id", UserRepo.GetUserById)
+	defaultPath.PUT("/admins/:id", UserRepo.UpdateUser)
+	defaultPath.DELETE("/admins/:id", UserRepo.DeleteUserById)
 
 }

@@ -4,6 +4,7 @@ import (
 	"knowledgeplus/go-api/database"
 	"knowledgeplus/go-api/models"
 	"net/http"
+	"os"
 	"time"
 
 	"github.com/dgrijalva/jwt-go"
@@ -21,7 +22,7 @@ func NewAuthRepo() *AuthRepo {
 	return &AuthRepo{Db: db}
 }
 
-var secretKey = "cp23sj2-knowledgeplus"
+var secretKey = os.Getenv("SECRET_KEY")
 
 // LoginHandler handles user authentication and generates a JWT token
 func (repository *AuthRepo) LoginHandler(c *gin.Context) {
@@ -44,38 +45,38 @@ func (repository *AuthRepo) LoginHandler(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"access-token": token})
 }
 
-// CreateUserHandler creates a new user with hashed password
-func (repository *AuthRepo) CreateUserHandler(c *gin.Context) {
-	var user models.User
+// // CreateUserHandler creates a new user with hashed password
+// func (repository *AuthRepo) CreateUserHandler(c *gin.Context) {
+// 	var user models.User
 
-	if err := c.ShouldBindJSON(&user); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-		return
-	}
+// 	if err := c.ShouldBindJSON(&user); err != nil {
+// 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+// 		return
+// 	}
 
-	// Hash the user's password before saving it to the database
-	hashedPassword, err := hashPassword(user.Password)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to hash the password"})
-		return
-	}
+// 	// Hash the user's password before saving it to the database
+// 	hashedPassword, err := hashPassword(user.Password)
+// 	if err != nil {
+// 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to hash the password"})
+// 		return
+// 	}
 
-	user.Password = hashedPassword
+// 	user.Password = hashedPassword
 
-	err = repository.Db.Create(&user).Error
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create user"})
-		return
-	}
+// 	err = repository.Db.Create(&user).Error
+// 	if err != nil {
+// 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create user"})
+// 		return
+// 	}
 
-	var userResponse models.UserResponse
-	userResponse.ID = user.ID
-	userResponse.Name = user.Name
-	userResponse.Email = user.Email
-	userResponse.Role = user.Role
+// 	var userResponse models.UserResponse
+// 	userResponse.ID = user.ID
+// 	userResponse.Name = user.Name
+// 	userResponse.Email = user.Email
+// 	userResponse.Role = user.Role
 
-	c.JSON(http.StatusCreated, userResponse)
-}
+// 	c.JSON(http.StatusCreated, userResponse)
+// }
 
 func generateToken(email, role string) string {
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
