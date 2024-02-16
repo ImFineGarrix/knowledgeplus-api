@@ -148,6 +148,45 @@ func GetCareersByCourseId(db *gorm.DB, courseID, page, limit int) (careers []Car
 	return careers, pagination, nil
 }
 
+// GetCareersWithFilters retrieves Career records from the database with filtering and pagination. for use frontend
+func GetCareersWithFilters(db *gorm.DB, page, limit int, search string, groupID int64) (careers []Career, pagination Pagination, err error) {
+	offset := (page - 1) * limit
+
+	// Create a query builder with preloads and filters
+	query := db.Preload("SkillsLevels.Skill").Preload("SkillsLevels.Course.Organization").
+		Offset(offset).Limit(limit)
+
+	if search != "" {
+		query = query.Where("name LIKE ?", "%"+search+"%")
+	}
+
+	if groupID != 0 {
+		query = query.Joins("JOIN groups_careers ON careers.career_id = groups_careers.career_id").
+			Where("groups_careers.group_id = ?", groupID)
+	}
+
+	err = query.Find(&careers).Error
+	if err != nil {
+		return nil, Pagination{}, err
+	}
+
+	// Calculate total pages
+	var totalCount int64
+	if err := query.Model(&Career{}).Count(&totalCount).Error; err != nil {
+		return nil, Pagination{}, err
+	}
+
+	totalPages := int(totalCount)
+
+	pagination = Pagination{
+		Page:  page,
+		Total: totalPages,
+		Limit: limit,
+	}
+
+	return careers, pagination, nil
+}
+
 // GetCareersBySkillId retrieves careers based on the provided SkillID with pagination.
 func GetCareersBySkillId(db *gorm.DB, skillID, page, limit int) (careers []Career, pagination Pagination, err error) {
 	offset := (page - 1) * limit

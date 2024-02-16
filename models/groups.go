@@ -5,19 +5,19 @@ import (
 )
 
 type Group struct {
-	GroupID  int64             `gorm:"column:group_id; primaryKey;autoIncrement" json:"group_id"`
+	GroupID  int               `gorm:"column:group_id; primaryKey;autoIncrement" json:"group_id"`
 	Name     string            `gorm:"column:name; not null; type:VARCHAR(255);" json:"name" binding:"required,max=255"`
 	Sections []SectionsInGroup `gorm:"many2many:sections_groups;foreignKey:GroupID;joinForeignKey:GroupID;References:SectionID;joinReferences:SectionID" json:"sections"`
 	Careers  []CareersInGroup  `gorm:"many2many:groups_careers;foreignKey:GroupID;joinForeignKey:GroupID;References:CareerID;joinReferences:CareerID" json:"-"`
 }
 
 type CareersInGroup struct {
-	CareerID int64  `gorm:"column:career_id;primaryKey;autoIncrement;" json:"career_id"`
+	CareerID int    `gorm:"column:career_id;primaryKey;autoIncrement;" json:"career_id"`
 	Name     string `gorm:"column:name; not null; type:VARCHAR(255)" json:"name" binding:"required,max=255"`
 }
 
 type SectionsInGroup struct {
-	SectionID int64  `gorm:"column:section_id;primaryKey;autoIncrement;" json:"section_id"`
+	SectionID int    `gorm:"column:section_id;primaryKey;autoIncrement;" json:"section_id"`
 	Name      string `gorm:"column:name; not null; type:VARCHAR(255)" json:"name" binding:"required,max=255"`
 }
 
@@ -34,7 +34,7 @@ func (SectionsInGroup) TableName() string {
 }
 
 type UpdateGroupModels struct {
-	GroupID  int64             `gorm:"column:group_id; primaryKey;autoIncrement" json:"group_id"`
+	GroupID  int               `gorm:"column:group_id; primaryKey;autoIncrement" json:"group_id"`
 	Name     string            `gorm:"column:name; not null; type:VARCHAR(255);" json:"name" binding:"max=255"`
 	Sections []SectionsInGroup `gorm:"many2many:sections_groups;foreignKey:GroupID;joinForeignKey:GroupID;References:SectionID;joinReferences:SectionID" json:"sections"`
 	Careers  []CareersInGroup  `gorm:"many2many:groups_careers;foreignKey:GroupID;joinForeignKey:GroupID;References:CareerID;joinReferences:CareerID" json:"careers"`

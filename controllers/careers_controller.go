@@ -21,6 +21,7 @@ func NewCareerRepo() *CareerRepo {
 	return &CareerRepo{Db: db}
 }
 
+// get all Careers use with backoffice
 // get Careers with pagination
 func (repository *CareerRepo) GetCareers(c *gin.Context) {
 	var (
@@ -40,6 +41,39 @@ func (repository *CareerRepo) GetCareers(c *gin.Context) {
 	}
 
 	careers, pagination, err = models.GetCareers(repository.Db, page, limit)
+	if err != nil {
+		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"careers":    careers,
+		"pagination": pagination,
+	})
+}
+
+// GetAllCareers retrieves all Career records from the database with filtering and pagination. user with frontend
+func (repository *CareerRepo) GetAllCareersWithFilters(c *gin.Context) {
+	var (
+		careers    []models.Career
+		pagination models.Pagination
+		err        error
+	)
+
+	page, err := strconv.Atoi(c.Query("page"))
+	if err != nil || page <= 0 {
+		page = 1
+	}
+
+	limit, err := strconv.Atoi(c.Query("limit"))
+	if err != nil || limit <= 0 {
+		limit = 10 // set a default limit
+	}
+
+	search := c.Query("search")
+	groupID, _ := strconv.ParseInt(c.Query("group"), 10, 64)
+
+	careers, pagination, err = models.GetCareersWithFilters(NewCareerRepo().Db, page, limit, search, groupID)
 	if err != nil {
 		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return

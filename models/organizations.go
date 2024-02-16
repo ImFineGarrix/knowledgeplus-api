@@ -18,7 +18,7 @@ type UpdateOrganizationModels struct {
 }
 
 func (Organizations) TableName() string {
-	return "Organizations"
+	return "organizations"
 }
 
 // GetOrganizations retrieves all Organization records from the database.
