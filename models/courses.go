@@ -38,15 +38,15 @@ type OrganizationInCourses struct {
 }
 
 type SkillsLevelsInCourses struct {
-	SkillsLevelsID int             `gorm:"column:skills_levels_id; primaryKey; autoIncrement;" json:"skills_levels_id"`
-	SkillID        *int            `gorm:"column:skill_id;" json:"skill_id"`
-	KnowledgeDesc  string          `gorm:"column:knowledge_desc;" json:"knowledge_desc"`
-	AbilityDesc    string          `gorm:"column:ability_desc;" json:"ability_desc"`
-	LevelID        int             `gorm:"column:level_id; not null" json:"level_id"`
-	CourseID       *int            `gorm:"column:course_id;" json:"-"`
-	CareerID       *int            `gorm:"column:career_id;" json:"-"`
-	Skill          SkillInCourses  `gorm:"foreignKey:SkillID;references:SkillID" json:"skill"`
-	Career         CareerInCourses `gorm:"foreignKey:CareerID; References:CareerID;" json:"career"`
+	SkillsLevelsID int              `gorm:"column:skills_levels_id; primaryKey; autoIncrement;" json:"skills_levels_id"`
+	SkillID        *int             `gorm:"column:skill_id;" json:"skill_id"`
+	KnowledgeDesc  string           `gorm:"column:knowledge_desc;" json:"knowledge_desc"`
+	AbilityDesc    string           `gorm:"column:ability_desc;" json:"ability_desc"`
+	LevelID        int              `gorm:"column:level_id; not null" json:"level_id"`
+	CourseID       *int             `gorm:"column:course_id;" json:"-"`
+	CareerID       *int             `gorm:"column:career_id;" json:"career_id"`
+	Skill          SkillInCourses   `gorm:"foreignKey:SkillID;references:SkillID" json:"skill"`
+	Career         *CareerInCourses `gorm:"foreignKey:CareerID; References:CareerID;" json:"career"`
 }
 
 type SkillInCourses struct {
@@ -93,7 +93,7 @@ func (CareerInCourses) TableName() string {
 // GetCourses retrieves all Course records from the database with pagination.
 func GetCourses(db *gorm.DB, page, limit int, courses *[]Course) (pagination Pagination, err error) {
 	offset := (page - 1) * limit
-	err = db.Preload("Organization").Preload("SkillsLevels.Skill").Preload("SkillsLevels.Career").Model(&Course{}).
+	err = db.Preload("SkillsLevels.Career").Preload("Organization").Preload("SkillsLevels.Skill").Model(&Course{}).
 		Offset(offset).Limit(limit).
 		Find(&courses).Error
 	if err != nil {

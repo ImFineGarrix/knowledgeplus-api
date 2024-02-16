@@ -26,15 +26,15 @@ type SectionInCareers struct {
 }
 
 type SkillsLevelsInCareers struct {
-	SkillsLevelsID int             `gorm:"column:skills_levels_id; primaryKey; autoIncrement;" json:"skills_levels_id"`
-	SkillID        *int            `gorm:"column:skill_id;" json:"skill_id"`
-	KnowledgeDesc  string          `gorm:"column:knowledge_desc;" json:"knowledge_desc"`
-	AbilityDesc    string          `gorm:"column:ability_desc;" json:"ability_desc"`
-	LevelID        int             `gorm:"column:level_id; not null" json:"level_id"`
-	CourseID       *int            `gorm:"column:course_id;" json:"-"`
-	CareerID       *int            `gorm:"column:career_id;" json:"-"`
-	Skill          SkillInCareers  `gorm:"foreignKey:SkillID;references:SkillID" json:"skill"`
-	Course         CourseInCareers `gorm:"foreignKey:CourseID;references:CourseID" json:"courses"`
+	SkillsLevelsID int              `gorm:"column:skills_levels_id; primaryKey; autoIncrement;" json:"skills_levels_id"`
+	SkillID        *int             `gorm:"column:skill_id;" json:"skill_id"`
+	KnowledgeDesc  string           `gorm:"column:knowledge_desc;" json:"knowledge_desc"`
+	AbilityDesc    string           `gorm:"column:ability_desc;" json:"ability_desc"`
+	LevelID        int              `gorm:"column:level_id; not null" json:"level_id"`
+	CourseID       *int             `gorm:"column:course_id;" json:"-"`
+	CareerID       *int             `gorm:"column:career_id;" json:"-"`
+	Skill          SkillInCareers   `gorm:"foreignKey:SkillID;references:SkillID" json:"skill"`
+	Course         *CourseInCareers `gorm:"foreignKey:CourseID;references:CourseID" json:"courses"`
 }
 
 type SkillInCareers struct {
