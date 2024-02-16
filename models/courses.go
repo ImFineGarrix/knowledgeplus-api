@@ -117,6 +117,39 @@ func GetCourses(db *gorm.DB, page, limit int, courses *[]Course) (pagination Pag
 	return pagination, nil
 }
 
+// GetAllCoursesWithFilter retrieves Course records from the database with filtering and pagination.
+func GetAllCoursesWithFilter(db *gorm.DB, page, limit int, search string) (courses []Course, pagination Pagination, err error) {
+	offset := (page - 1) * limit
+
+	// Create a query builder with preloads and filters
+	query := db.Preload("SkillsLevels").Preload("Organization").Offset(offset).Limit(limit)
+
+	if search != "" {
+		query = query.Where("name LIKE ?", "%"+search+"%")
+	}
+
+	err = query.Find(&courses).Error
+	if err != nil {
+		return nil, Pagination{}, err
+	}
+
+	// Calculate total pages
+	var totalCount int64
+	if err := query.Model(&Course{}).Count(&totalCount).Error; err != nil {
+		return nil, Pagination{}, err
+	}
+
+	totalPages := int(totalCount)
+
+	pagination = Pagination{
+		Page:  page,
+		Total: totalPages,
+		Limit: limit,
+	}
+
+	return courses, pagination, nil
+}
+
 // GetCoursesBySkillId retrieves courses based on the provided SkillID with pagination.
 func GetCoursesBySkillId(db *gorm.DB, skillID, page, limit int, courses *[]Course) (pagination Pagination, err error) {
 	offset := (page - 1) * limit

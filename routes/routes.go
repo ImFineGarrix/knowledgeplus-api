@@ -17,7 +17,6 @@ func SetupRoutes(defaultPath *gin.RouterGroup) {
 	SectionRepo := controllers.NewSectionRepo()
 	GroupRepo := controllers.NewGroupRepo()
 	CareerRepo := controllers.NewCareerRepo()
-	// CategoriesRepo := controllers.NewCategoriesRepo()
 	SkillRepo := controllers.NewSkillRepo()
 	LevelsRepo := controllers.NewLevelsRepo()
 	CourseRepo := controllers.NewCourseRepo()
@@ -25,7 +24,6 @@ func SetupRoutes(defaultPath *gin.RouterGroup) {
 	UserRepo := controllers.NewUserRepo()
 
 	/** careers models */
-
 	// backoffice
 	defaultPath.GET("/backoffice/careers", CareerRepo.GetCareers)
 	defaultPath.GET("/backoffice/careers/:id", CareerRepo.GetCareer)
@@ -47,7 +45,7 @@ func SetupRoutes(defaultPath *gin.RouterGroup) {
 	defaultPath.PUT("/backoffice/skills/:id", SkillRepo.UpdateSkill)
 	defaultPath.DELETE("/backoffice/skills/:id", SkillRepo.DeleteSkillById)
 	//frontend
-	defaultPath.GET("/skills", SkillRepo.GetSkills)
+	defaultPath.GET("/skills", SkillRepo.GetAllSkillsWithFilter)
 	defaultPath.GET("/skills-by-course/:course_id", SkillRepo.GetSkillsByCourseId)
 	defaultPath.GET("/skills-by-career/:career_id", SkillRepo.GetSkillsByCareerId)
 	defaultPath.GET("/skills/:id", SkillRepo.GetSkillById)
@@ -102,7 +100,7 @@ func SetupRoutes(defaultPath *gin.RouterGroup) {
 	defaultPath.PUT("/backoffice/courses/:id", CourseRepo.UpdateCourse)
 	defaultPath.DELETE("/backoffice/courses/:id", CourseRepo.DeleteCourseById)
 	//frontend
-	defaultPath.GET("/courses", CourseRepo.GetCourses)
+	defaultPath.GET("/courses", CourseRepo.GetAllSkillsWithFilter)
 	defaultPath.GET("/courses/:id", CourseRepo.GetCourseById)
 	defaultPath.GET("/courses-by-skill/:skill_id", CourseRepo.GetCoursesBySkillId)
 	defaultPath.GET("/courses-by-career/:career_id", CourseRepo.GetCoursesByCareerId)

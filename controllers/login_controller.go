@@ -82,7 +82,7 @@ func generateToken(email, role string) string {
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
 		"email": email,
 		"role":  role,
-		"exp":   time.Now().Add(time.Hour * 1).Unix(), // Token expiration time
+		"exp":   time.Now().Add(time.Hour * 12).Unix(), // Token expiration time
 	})
 
 	tokenString, err := token.SignedString([]byte(secretKey))

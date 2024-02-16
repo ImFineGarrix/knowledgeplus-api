@@ -51,6 +51,38 @@ func (repository *SkillRepo) GetSkills(c *gin.Context) {
 	})
 }
 
+// GetAllSkillsWithFilter retrieves all skill records from the database with filtering and pagination.
+func (repository *SkillRepo) GetAllSkillsWithFilter(c *gin.Context) {
+	var (
+		skills     []models.Skill
+		pagination models.Pagination
+		err        error
+	)
+
+	page, err := strconv.Atoi(c.Query("page"))
+	if err != nil || page <= 0 {
+		page = 1
+	}
+
+	limit, err := strconv.Atoi(c.Query("limit"))
+	if err != nil || limit <= 0 {
+		limit = 10 // set a default limit
+	}
+
+	search := c.Query("search")
+
+	skills, pagination, err = models.GetAllSkillsWithFilter(repository.Db, page, limit, search)
+	if err != nil {
+		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"skills":     skills,
+		"pagination": pagination,
+	})
+}
+
 // GetSkillsByCourseId retrieves skills associated with a specific CourseID with pagination.
 func (repository *SkillRepo) GetSkillsByCourseId(c *gin.Context) {
 	courseID, err := strconv.Atoi(c.Param("course_id"))
