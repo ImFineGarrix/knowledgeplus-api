@@ -10,7 +10,7 @@ func SetupRoutes(defaultPath *gin.RouterGroup) {
 	// Initialize middleware
 	// authMiddleware := middleware.AuthMiddleware()
 
-	defaultPath.POST("/auth/login", controllers.NewAuthRepo().LoginHandler)
+	defaultPath.POST("/backoffice/auth/login", controllers.NewAuthRepo().LoginHandler)
 	// defaultPath.Use(authMiddleware).POST("/auth/register", controllers.NewAuthRepo().CreateUserHandler)
 	// defaultPath.POST("/admins", controllers.NewAuthRepo().CreateUserHandler)
 
