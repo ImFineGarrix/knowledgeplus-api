@@ -7,10 +7,10 @@
 // 	SkillID        int64     `gorm:"column:skill_id; not null" json:"skill_id"`
 // 	KnowledgeDesc  string    `gorm:"column:knowledge_desc" json:"knowledge_desc"`
 // 	AbilityDesc    string    `gorm:"column:ability_desc" json:"ability_desc"`
-// 	LevelsID       int64     `gorm:"column:levels_id; not null" json:"levels_id"`
+// 	LevelID       int64     `gorm:"column:levels_id; not null" json:"levels_id"`
 // 	CourseID       *int64    `gorm:"column:course_id" json:"course_id"`
 // 	Skill          Skill     `gorm:"foreignKey:SkillID" json:"skill"`
-// 	Levels         Level     `gorm:"foreignKey:LevelsID" json:"level"`
+// 	Levels         Level     `gorm:"foreignKey:LevelID" json:"level"`
 // 	Course         *Course   `gorm:"foreignKey:CourseID" json:"course,omitempty"`
 // }
 
@@ -58,7 +58,7 @@ type SkillsLevels struct {
 	SkillID        *int   `gorm:"column:skill_id; not null;" json:"-"`
 	KnowledgeDesc  string `gorm:"column:knowledge_desc;" json:"knowledge_desc"`
 	AbilityDesc    string `gorm:"column:ability_desc;" json:"ability_desc"`
-	LevelsID       int    `gorm:"column:levels_id; not null" json:"levels_id"`
+	LevelID        int    `gorm:"column:level_id; not null" json:"levels_id"`
 	CourseID       *int   `gorm:"column:course_id; not null;" json:"-"`
 	CareerID       *int   `gorm:"column:career_id; not null;" json:"-"`
 }

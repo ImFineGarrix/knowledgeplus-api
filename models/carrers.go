@@ -30,7 +30,7 @@ type SkillsLevelsInCareers struct {
 	SkillID        *int            `gorm:"column:skill_id;" json:"skill_id"`
 	KnowledgeDesc  string          `gorm:"column:knowledge_desc;" json:"knowledge_desc"`
 	AbilityDesc    string          `gorm:"column:ability_desc;" json:"ability_desc"`
-	LevelsID       int             `gorm:"column:levels_id; not null" json:"levels_id"`
+	LevelID        int             `gorm:"column:level_id; not null" json:"level_id"`
 	CourseID       *int            `gorm:"column:course_id; not null;" json:"-"`
 	CareerID       *int            `gorm:"column:career_id; not null;" json:"-"`
 	Skill          SkillInCareers  `gorm:"foreignKey:SkillID;references:SkillID" json:"skill"`
