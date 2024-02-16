@@ -90,7 +90,7 @@ func (GroupsInCareers) TableName() string {
 // GetCareers retrieves all Career records from the database with pagination.
 func GetCareers(db *gorm.DB, page, limit int) (careers []Career, pagination Pagination, err error) {
 	offset := (page - 1) * limit
-	err = db.Preload("SkillsLevels.Skill").Preload("SkillsLevels.Course.Organization").
+	err = db.Preload("SkillsLevels.Skill").Preload("SkillsLevels.Course.Organization").Preload("Groups").
 		Offset(offset).Limit(limit).
 		Find(&careers).Error
 	if err != nil {
@@ -119,6 +119,7 @@ func GetCareersByCourseId(db *gorm.DB, courseID, page, limit int) (careers []Car
 	offset := (page - 1) * limit
 	err = db.
 		Preload("SkillsLevels.Skill").
+		Preload("Groups").
 		Preload("SkillsLevels.Course.Organization").
 		Joins("JOIN skills_levels ON careers.career_id = skills_levels.career_id").
 		Where("skills_levels.course_id = ?", courseID).
@@ -153,7 +154,7 @@ func GetCareersWithFilters(db *gorm.DB, page, limit int, search string, groupID 
 	offset := (page - 1) * limit
 
 	// Create a query builder with preloads and filters
-	query := db.Preload("SkillsLevels.Skill").Preload("SkillsLevels.Course.Organization").
+	query := db.Preload("SkillsLevels.Skill").Preload("SkillsLevels.Course.Organization").Preload("Groups").
 		Offset(offset).Limit(limit)
 
 	if search != "" {
@@ -192,6 +193,7 @@ func GetCareersBySkillId(db *gorm.DB, skillID, page, limit int) (careers []Caree
 	offset := (page - 1) * limit
 	err = db.
 		Preload("SkillsLevels.Skill").
+		Preload("Groups").
 		Preload("SkillsLevels.Course.Organization").
 		Joins("JOIN skills_levels ON careers.career_id = skills_levels.career_id").
 		Where("skills_levels.skill_id = ?", skillID).
@@ -223,7 +225,7 @@ func GetCareersBySkillId(db *gorm.DB, skillID, page, limit int) (careers []Caree
 
 // GetCareerById retrieves a Career by its ID from the database.
 func GetCareerById(db *gorm.DB, Career *Career, id int) (err error) {
-	err = db.Where("career_id = ?", id).Preload("SkillsLevels.Skill").Preload("SkillsLevels.Course.Organization").First(Career).Error
+	err = db.Where("career_id = ?", id).Preload("SkillsLevels.Skill").Preload("SkillsLevels.Course.Organization").Preload("Groups").First(Career).Error
 	if err != nil {
 		return err
 	}
