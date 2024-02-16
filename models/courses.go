@@ -38,15 +38,15 @@ type OrganizationInCourses struct {
 }
 
 type SkillsLevelsInCourses struct {
-	SkillsLevelsID int            `gorm:"column:skills_levels_id; primaryKey; autoIncrement;" json:"skills_levels_id"`
-	SkillID        *int           `gorm:"column:skill_id;" json:"skill_id"`
-	KnowledgeDesc  string         `gorm:"column:knowledge_desc;" json:"knowledge_desc"`
-	AbilityDesc    string         `gorm:"column:ability_desc;" json:"ability_desc"`
-	LevelID        int            `gorm:"column:level_id; not null" json:"level_id"`
-	CourseID       *int           `gorm:"column:course_id; not null;" json:"-"`
-	CareerID       *int           `gorm:"column:career_id; not null;" json:"career_id"`
-	Skill          SkillInCourses `gorm:"foreignKey:SkillID;references:SkillID" json:"skill"`
-	Career         CareersInGroup `gorm:"foreignKey:CareerID;references:CareerID" json:"career"`
+	SkillsLevelsID int             `gorm:"column:skills_levels_id; primaryKey; autoIncrement;" json:"skills_levels_id"`
+	SkillID        *int            `gorm:"column:skill_id;" json:"skill_id"`
+	KnowledgeDesc  string          `gorm:"column:knowledge_desc;" json:"knowledge_desc"`
+	AbilityDesc    string          `gorm:"column:ability_desc;" json:"ability_desc"`
+	LevelID        int             `gorm:"column:level_id; not null" json:"level_id"`
+	CourseID       *int            `gorm:"column:course_id; not null;" json:"-"`
+	CareerID       int             `gorm:"column:career_id; not null;" json:"career_id"`
+	Skill          SkillInCourses  `gorm:"foreignKey:SkillID;references:SkillID" json:"skill"`
+	Career         CareerInCourses `gorm:"foreignKey:CareerID; References:CareerID;" json:"career"`
 }
 
 type SkillInCourses struct {
@@ -58,8 +58,8 @@ type SkillInCourses struct {
 	SkillsLevels []SkillsLevelsInSkills `gorm:"foreignKey:SkillID; References:SkillID;" json:"-"`
 }
 
-type CareerInCourse struct {
-	CareerID     int                     `gorm:"column:career_id;primaryKey;autoIncrement;" json:"-"`
+type CareerInCourses struct {
+	CareerID     int                     `gorm:"column:career_id;primaryKey;autoIncrement;" json:"career_id"`
 	Name         string                  `gorm:"column:name; not null; type:VARCHAR(255)" json:"name" binding:"required,max=255"`
 	Description  string                  `gorm:"column:description; default:NULL; type:LONGTEXT;"  json:"description" binding:"max=1500"`
 	Groups       []GroupsInCareers       `gorm:"many2many:groups_careers;foreignKey:CareerID;joinForeignKey:CareerID;References:GroupID;joinReferences:GroupID" json:"-"`
@@ -86,7 +86,7 @@ func (SkillInCourses) TableName() string {
 	return "skills"
 }
 
-func (CareerInCourse) TableName() string {
+func (CareerInCourses) TableName() string {
 	return "careers"
 }
 
