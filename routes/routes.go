@@ -41,7 +41,7 @@ func SetupRoutes(defaultPath *gin.RouterGroup) {
 
 	/** skills **/
 	//backoffice
-
+	defaultPath.GET("/backoffice/skills", SkillRepo.GetSkills)
 	defaultPath.GET("/backoffice/skills/:id", SkillRepo.GetSkillById)
 	defaultPath.POST("/backoffice/skills", SkillRepo.CreateSkill)
 	defaultPath.PUT("/backoffice/skills/:id", SkillRepo.UpdateSkill)
