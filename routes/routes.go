@@ -27,14 +27,14 @@ func SetupRoutes(defaultPath *gin.RouterGroup) {
 	/** careers models */
 
 	// backoffice
-	defaultPath.GET("/backoffice/careers", CareerRepo.GetAllCareersWithFilters)
+	defaultPath.GET("/backoffice/careers", CareerRepo.GetCareers)
 	defaultPath.GET("/backoffice/careers/:id", CareerRepo.GetCareer)
 	defaultPath.POST("/backoffice/careers", CareerRepo.CreateCareer)
 	defaultPath.PUT("/backoffice/careers/:id", CareerRepo.UpdateCareer)
 	defaultPath.DELETE("/backoffice/careers/:id", CareerRepo.DeleteCareer)
 
 	//frontend
-	defaultPath.GET("/careers", CareerRepo.GetCareers)
+	defaultPath.GET("/careers", CareerRepo.GetAllCareersWithFilters)
 	defaultPath.GET("/careers/:id", CareerRepo.GetCareer)
 	defaultPath.GET("/careers-by-course/:course_id", CareerRepo.GetCareersByCourseId)
 	defaultPath.GET("/careers-by-skill/:skill_id", CareerRepo.GetCareersBySkillId)
