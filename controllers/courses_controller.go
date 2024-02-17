@@ -4,10 +4,12 @@ import (
 	"errors"
 	"knowledgeplus/go-api/database"
 	"knowledgeplus/go-api/models"
+	"knowledgeplus/go-api/response"
 	"net/http"
 	"strconv"
 
 	"github.com/gin-gonic/gin"
+	"github.com/go-playground/validator/v10"
 	"gorm.io/gorm"
 )
 
@@ -173,7 +175,30 @@ func (repository *CourseRepo) GetCoursesByCareerId(c *gin.Context) {
 func (repository *CourseRepo) CreateCourse(c *gin.Context) {
 	var course models.Course
 	if err := c.ShouldBindJSON(&course); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		var ve validator.ValidationErrors
+		if errors.As(err, &ve) {
+			out := make([]response.ErrorMsg, len(ve))
+			for i, fe := range ve {
+				out[i] = response.ErrorMsg{
+					Code:    http.StatusBadRequest,
+					Field:   fe.Field(),
+					Message: response.GetErrorMsg(fe),
+				}
+			}
+			c.JSON(http.StatusCreated, out)
+		}
+		return
+	}
+
+	// Check if the name already exists in the database
+	var existingCourse models.Course
+	if err := repository.Db.Where("name = ?", course.Name).First(&existingCourse).Error; err == nil {
+		out := response.ErrorMsg{
+			Code:    http.StatusBadRequest,
+			Field:   "Name",
+			Message: "Name already used.",
+		}
+		c.JSON(http.StatusBadRequest, out)
 		return
 	}
 
@@ -205,7 +230,30 @@ func (repository *CourseRepo) UpdateCourse(c *gin.Context) {
 
 	// Bind the updated data from the request
 	if err := c.ShouldBindJSON(&updatedCourse); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		var ve validator.ValidationErrors
+		if errors.As(err, &ve) {
+			out := make([]response.ErrorMsg, len(ve))
+			for i, fe := range ve {
+				out[i] = response.ErrorMsg{
+					Code:    http.StatusBadRequest,
+					Field:   fe.Field(),
+					Message: response.GetErrorMsg(fe),
+				}
+			}
+			c.JSON(http.StatusCreated, out)
+		}
+		return
+	}
+
+	// Check if the name already exists in the database
+	var existingCourse models.Course
+	if err := repository.Db.Where("name = ?", updatedCourse.Name).First(&existingCourse).Error; err == nil {
+		out := response.ErrorMsg{
+			Code:    http.StatusBadRequest,
+			Field:   "Name",
+			Message: "Name already used.",
+		}
+		c.JSON(http.StatusBadRequest, out)
 		return
 	}
 

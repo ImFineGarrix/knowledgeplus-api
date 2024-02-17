@@ -5,10 +5,12 @@ import (
 	"fmt"
 	"knowledgeplus/go-api/database"
 	"knowledgeplus/go-api/models"
+	"knowledgeplus/go-api/response"
 	"net/http"
 	"strconv"
 
 	"github.com/gin-gonic/gin"
+	"github.com/go-playground/validator/v10"
 	"gorm.io/gorm"
 )
 
@@ -177,17 +179,38 @@ func (repository *SkillRepo) CreateSkill(c *gin.Context) {
 	var Skill models.Skill
 	// var CategoriesID = Skill.Categories[0].CategoryID
 	if err := c.ShouldBindJSON(&Skill); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		var ve validator.ValidationErrors
+		if errors.As(err, &ve) {
+			out := make([]response.ErrorMsg, len(ve))
+			for i, fe := range ve {
+				out[i] = response.ErrorMsg{
+					Code:    http.StatusBadRequest,
+					Field:   fe.Field(),
+					Message: response.GetErrorMsg(fe),
+				}
+			}
+			c.JSON(http.StatusCreated, out)
+		}
 		return
 	}
-	// fmt.Println(&Skill)
+
+	// Check if the name already exists in the database
+	var existingSkill models.Organizations
+	if err := repository.Db.Where("name = ?", Skill.Name).First(&existingSkill).Error; err == nil {
+		out := response.ErrorMsg{
+			Code:    http.StatusBadRequest,
+			Field:   "Name",
+			Message: "Name already used.",
+		}
+		c.JSON(http.StatusBadRequest, out)
+		return
+	}
+
 	err := models.CreateSkill(repository.Db, &Skill)
 	if err != nil {
 		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err})
 		return
 	}
-	// fmt.Println(Skill.SkillID)
-
 	c.JSON(http.StatusCreated, Skill)
 }
 
@@ -210,7 +233,30 @@ func (repository *SkillRepo) UpdateSkill(c *gin.Context) {
 
 	// Bind the updated data from the request
 	if err := c.ShouldBindJSON(&updatedSkill); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		var ve validator.ValidationErrors
+		if errors.As(err, &ve) {
+			out := make([]response.ErrorMsg, len(ve))
+			for i, fe := range ve {
+				out[i] = response.ErrorMsg{
+					Code:    http.StatusBadRequest,
+					Field:   fe.Field(),
+					Message: response.GetErrorMsg(fe),
+				}
+			}
+			c.JSON(http.StatusCreated, out)
+		}
+		return
+	}
+
+	// Check if the name already exists in the database
+	var existingSkill models.Organizations
+	if err := repository.Db.Where("name = ?", updatedSkill.Name).First(&existingSkill).Error; err == nil {
+		out := response.ErrorMsg{
+			Code:    http.StatusBadRequest,
+			Field:   "Name",
+			Message: "Name already used.",
+		}
+		c.JSON(http.StatusBadRequest, out)
 		return
 	}
 

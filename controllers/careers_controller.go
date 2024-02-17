@@ -4,10 +4,12 @@ import (
 	"errors"
 	"knowledgeplus/go-api/database"
 	"knowledgeplus/go-api/models"
+	"knowledgeplus/go-api/response"
 	"net/http"
 	"strconv"
 
 	"github.com/gin-gonic/gin"
+	"github.com/go-playground/validator/v10"
 	"gorm.io/gorm"
 )
 
@@ -165,20 +167,42 @@ func (repository *CareerRepo) GetCareer(c *gin.Context) {
 // CreateCareer creates a new Career record.
 func (repository *CareerRepo) CreateCareer(c *gin.Context) {
 	var Career models.Career
-	// var CategoriesID = Career.Categories[0].CategoryID
+
+	// Bind the JSON request to the Career struct
 	if err := c.ShouldBindJSON(&Career); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		var ve validator.ValidationErrors
+		if errors.As(err, &ve) {
+			out := make([]response.ErrorMsg, len(ve))
+			for i, fe := range ve {
+				out[i] = response.ErrorMsg{
+					Code:    http.StatusBadRequest,
+					Field:   fe.Field(),
+					Message: response.GetErrorMsg(fe),
+				}
+			}
+			c.JSON(http.StatusBadRequest, out)
+		}
 		return
 	}
 
-	// fmt.Println(Career.Categories[0].CategoryID)
-	// fmt.Println(&Career)
+	// Check if the name already exists in the database
+	var existingCareer models.Career
+	if err := repository.Db.Where("name = ?", Career.Name).First(&existingCareer).Error; err == nil {
+		out := response.ErrorMsg{
+			Code:    http.StatusBadRequest,
+			Field:   "Name",
+			Message: "Name already used.",
+		}
+		c.JSON(http.StatusBadRequest, out)
+		return
+	}
+
+	// Create the Career record
 	err := models.CreateCareer(repository.Db, &Career)
 	if err != nil {
 		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err})
 		return
 	}
-	// fmt.Println(Career.CareerID)
 
 	c.JSON(http.StatusCreated, Career)
 }
@@ -202,7 +226,30 @@ func (repository *CareerRepo) UpdateCareer(c *gin.Context) {
 
 	// Bind the updated data from the request
 	if err := c.ShouldBindJSON(&updatedCareer); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		var ve validator.ValidationErrors
+		if errors.As(err, &ve) {
+			out := make([]response.ErrorMsg, len(ve))
+			for i, fe := range ve {
+				out[i] = response.ErrorMsg{
+					Code:    http.StatusBadRequest,
+					Field:   fe.Field(),
+					Message: response.GetErrorMsg(fe),
+				}
+			}
+			c.JSON(http.StatusCreated, out)
+		}
+		return
+	}
+
+	// Check if the name already exists in the database
+	var existingCareer models.Career
+	if err := repository.Db.Where("name = ?", updatedCareer.Name).First(&existingCareer).Error; err == nil {
+		out := response.ErrorMsg{
+			Code:    http.StatusBadRequest,
+			Field:   "Name",
+			Message: "Name already used.",
+		}
+		c.JSON(http.StatusBadRequest, out)
 		return
 	}
 

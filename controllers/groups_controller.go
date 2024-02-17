@@ -4,10 +4,12 @@ import (
 	"errors"
 	"knowledgeplus/go-api/database"
 	"knowledgeplus/go-api/models"
+	"knowledgeplus/go-api/response"
 	"net/http"
 	"strconv"
 
 	"github.com/gin-gonic/gin"
+	"github.com/go-playground/validator/v10"
 	"gorm.io/gorm"
 )
 
@@ -71,7 +73,30 @@ func (repository *GroupRepo) CreateGroup(c *gin.Context) {
 	var group models.Group
 
 	if err := c.ShouldBindJSON(&group); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		var ve validator.ValidationErrors
+		if errors.As(err, &ve) {
+			out := make([]response.ErrorMsg, len(ve))
+			for i, fe := range ve {
+				out[i] = response.ErrorMsg{
+					Code:    http.StatusBadRequest,
+					Field:   fe.Field(),
+					Message: response.GetErrorMsg(fe),
+				}
+			}
+			c.JSON(http.StatusCreated, out)
+		}
+		return
+	}
+
+	// Check if the name already exists in the database
+	var existingGroup models.Group
+	if err := repository.Db.Where("name = ?", group.Name).First(&existingGroup).Error; err == nil {
+		out := response.ErrorMsg{
+			Code:    http.StatusBadRequest,
+			Field:   "Name",
+			Message: "Name already used.",
+		}
+		c.JSON(http.StatusBadRequest, out)
 		return
 	}
 
@@ -102,6 +127,18 @@ func (repository *GroupRepo) UpdateGroup(c *gin.Context) {
 
 	if err := c.ShouldBindJSON(&updatedGroup); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	// Check if the name already exists in the database
+	var existingGroup models.Group
+	if err := repository.Db.Where("name = ?", updatedGroup.Name).First(&existingGroup).Error; err == nil {
+		out := response.ErrorMsg{
+			Code:    http.StatusBadRequest,
+			Field:   "Name",
+			Message: "Name already used.",
+		}
+		c.JSON(http.StatusBadRequest, out)
 		return
 	}
 

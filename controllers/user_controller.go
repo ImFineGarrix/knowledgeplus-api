@@ -4,10 +4,12 @@ import (
 	"errors"
 	"knowledgeplus/go-api/database"
 	"knowledgeplus/go-api/models"
+	"knowledgeplus/go-api/response"
 	"net/http"
 	"strconv"
 
 	"github.com/gin-gonic/gin"
+	"github.com/go-playground/validator/v10"
 	"gorm.io/gorm"
 )
 
@@ -58,7 +60,30 @@ func (repository *UserRepo) CreateUser(c *gin.Context) {
 	var user models.User
 
 	if err := c.ShouldBindJSON(&user); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		var ve validator.ValidationErrors
+		if errors.As(err, &ve) {
+			out := make([]response.ErrorMsg, len(ve))
+			for i, fe := range ve {
+				out[i] = response.ErrorMsg{
+					Code:    http.StatusBadRequest,
+					Field:   fe.Field(),
+					Message: response.GetErrorMsg(fe),
+				}
+			}
+			c.JSON(http.StatusCreated, out)
+		}
+		return
+	}
+
+	// Check if the name already exists in the database
+	var existingUser models.Organizations
+	if err := repository.Db.Where("name = ?", user.Name).First(&existingUser).Error; err == nil {
+		out := response.ErrorMsg{
+			Code:    http.StatusBadRequest,
+			Field:   "Name",
+			Message: "Name already used.",
+		}
+		c.JSON(http.StatusBadRequest, out)
 		return
 	}
 
@@ -104,7 +129,30 @@ func (repository *UserRepo) UpdateUser(c *gin.Context) {
 	}
 
 	if err := c.ShouldBindJSON(&updatedUser); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		var ve validator.ValidationErrors
+		if errors.As(err, &ve) {
+			out := make([]response.ErrorMsg, len(ve))
+			for i, fe := range ve {
+				out[i] = response.ErrorMsg{
+					Code:    http.StatusBadRequest,
+					Field:   fe.Field(),
+					Message: response.GetErrorMsg(fe),
+				}
+			}
+			c.JSON(http.StatusCreated, out)
+		}
+		return
+	}
+
+	// Check if the name already exists in the database
+	var existingUser models.Organizations
+	if err := repository.Db.Where("name = ?", updatedUser.Name).First(&existingUser).Error; err == nil {
+		out := response.ErrorMsg{
+			Code:    http.StatusBadRequest,
+			Field:   "Name",
+			Message: "Name already used.",
+		}
+		c.JSON(http.StatusBadRequest, out)
 		return
 	}
 
