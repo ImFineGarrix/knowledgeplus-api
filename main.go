@@ -22,7 +22,7 @@ func setupRouter() *gin.Engine {
 	config := cors.DefaultConfig()
 	config.AllowOrigins = []string{"*"} // Add your frontend URL
 	config.AllowMethods = []string{"GET", "POST", "PUT", "DELETE", "OPTIONS", "HEAD"}
-	config.AllowHeaders = []string{"Authorization"}
+	config.AllowHeaders = []string{"Authorization", "Content-Type"}
 	r.Use(cors.New(config))
 	defaultPath := r.Group(os.Getenv("APIPATH"))
 
