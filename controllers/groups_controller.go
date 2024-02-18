@@ -84,6 +84,9 @@ func (repository *GroupRepo) CreateGroup(c *gin.Context) {
 				}
 			}
 			c.JSON(http.StatusCreated, out)
+		} else {
+			c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			return
 		}
 		return
 	}
@@ -126,7 +129,21 @@ func (repository *GroupRepo) UpdateGroup(c *gin.Context) {
 	}
 
 	if err := c.ShouldBindJSON(&updatedGroup); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		var ve validator.ValidationErrors
+		if errors.As(err, &ve) {
+			out := make([]response.ErrorMsg, len(ve))
+			for i, fe := range ve {
+				out[i] = response.ErrorMsg{
+					Code:    http.StatusBadRequest,
+					Field:   fe.Field(),
+					Message: response.GetErrorMsg(fe),
+				}
+			}
+			c.JSON(http.StatusCreated, out)
+		} else {
+			c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			return
+		}
 		return
 	}
 

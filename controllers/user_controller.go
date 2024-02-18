@@ -170,8 +170,14 @@ func (repository *UserRepo) UpdateUser(c *gin.Context) {
 		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err})
 		return
 	}
+	// Prepare a user response without the password field
+	var userResponse models.UserResponse
+	userResponse.ID = updatedUser.ID
+	userResponse.Name = updatedUser.Name
+	userResponse.Email = updatedUser.Email
+	userResponse.Role = updatedUser.Role
 
-	c.JSON(http.StatusOK, updatedUser)
+	c.JSON(http.StatusOK, userResponse)
 }
 
 // DeleteUserById deletes a User record by ID.

@@ -72,6 +72,9 @@ func (repository *SectionRepo) CreateSection(c *gin.Context) {
 				}
 			}
 			c.JSON(http.StatusCreated, out)
+		} else {
+			c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			return
 		}
 		return
 	}
@@ -127,6 +130,9 @@ func (repository *SectionRepo) UpdateSection(c *gin.Context) {
 				}
 			}
 			c.JSON(http.StatusCreated, out)
+		} else {
+			c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			return
 		}
 		return
 	}

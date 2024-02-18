@@ -186,6 +186,9 @@ func (repository *CourseRepo) CreateCourse(c *gin.Context) {
 				}
 			}
 			c.JSON(http.StatusCreated, out)
+		} else {
+			c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			return
 		}
 		return
 	}
@@ -241,6 +244,9 @@ func (repository *CourseRepo) UpdateCourse(c *gin.Context) {
 				}
 			}
 			c.JSON(http.StatusCreated, out)
+		} else {
+			c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			return
 		}
 		return
 	}

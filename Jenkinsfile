@@ -27,7 +27,7 @@ pipeline {
             steps {
                 script {
                     sh '''                     
-                        docker run -d --name gin-container-${ENV} -p 8081:8081 --network ${ENV} sj2go-gin-${ENV}:latest
+                        docker run -d --name gin-container-${ENV} -p :8081 --network ${ENV} sj2go-gin-${ENV}:latest
                     '''
                 }
             }

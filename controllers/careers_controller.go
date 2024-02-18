@@ -181,6 +181,9 @@ func (repository *CareerRepo) CreateCareer(c *gin.Context) {
 				}
 			}
 			c.JSON(http.StatusBadRequest, out)
+		} else {
+			c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			return
 		}
 		return
 	}
@@ -237,6 +240,9 @@ func (repository *CareerRepo) UpdateCareer(c *gin.Context) {
 				}
 			}
 			c.JSON(http.StatusCreated, out)
+		} else {
+			c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			return
 		}
 		return
 	}

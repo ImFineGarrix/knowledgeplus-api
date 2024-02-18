@@ -190,6 +190,9 @@ func (repository *SkillRepo) CreateSkill(c *gin.Context) {
 				}
 			}
 			c.JSON(http.StatusCreated, out)
+		} else {
+			c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			return
 		}
 		return
 	}
@@ -244,6 +247,9 @@ func (repository *SkillRepo) UpdateSkill(c *gin.Context) {
 				}
 			}
 			c.JSON(http.StatusCreated, out)
+		} else {
+			c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			return
 		}
 		return
 	}

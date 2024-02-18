@@ -7,7 +7,7 @@ import (
 type Group struct {
 	GroupID  int               `gorm:"column:group_id; primaryKey;autoIncrement" json:"group_id"`
 	Name     string            `gorm:"column:name; not null; type:VARCHAR(255);" json:"name" binding:"required,max=255"`
-	Sections []SectionsInGroup `gorm:"many2many:sections_groups;foreignKey:GroupID;joinForeignKey:GroupID;References:SectionID;joinReferences:SectionID" json:"sections"`
+	Sections []SectionsInGroup `gorm:"many2many:sections_groups;foreignKey:GroupID;joinForeignKey:GroupID;References:SectionID;joinReferences:SectionID" json:"sections" binding:"required"`
 	Careers  []CareersInGroup  `gorm:"many2many:groups_careers;foreignKey:GroupID;joinForeignKey:GroupID;References:CareerID;joinReferences:CareerID" json:"-"`
 }
 
