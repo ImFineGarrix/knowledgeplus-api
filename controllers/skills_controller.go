@@ -277,6 +277,17 @@ func (repository *SkillRepo) UpdateSkill(c *gin.Context) {
 		return
 	}
 
+	// Check if the levels are unique for the new skill
+	if err := validateSkillLevels(repository.Db, updatedSkill.SkillsLevels); err != nil {
+		out := response.ErrorMsg{
+			Code:    http.StatusBadRequest,
+			Field:   "Levels",
+			Message: "Levels must be unique for each skill.",
+		}
+		c.JSON(http.StatusBadRequest, out)
+		return
+	}
+
 	// Update the skill record
 	err = models.UpdateSkill(repository.Db, &updatedSkill)
 	if err != nil {
