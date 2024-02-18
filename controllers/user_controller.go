@@ -146,7 +146,7 @@ func (repository *UserRepo) UpdateUser(c *gin.Context) {
 
 	// Check if the name already exists in the database
 	var existingUser models.Organizations
-	if err := repository.Db.Where("name = ?", updatedUser.Name).First(&existingUser).Error; err == nil {
+	if err := repository.Db.Where("name = ? AND user_id != ?", updatedUser.Name, updatedUser.ID).First(&existingUser).Error; err == nil {
 		out := response.ErrorMsg{
 			Code:    http.StatusBadRequest,
 			Field:   "Name",

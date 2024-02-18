@@ -250,7 +250,7 @@ func (repository *SkillRepo) UpdateSkill(c *gin.Context) {
 
 	// Check if the name already exists in the database
 	var existingSkill models.Organizations
-	if err := repository.Db.Where("name = ?", updatedSkill.Name).First(&existingSkill).Error; err == nil {
+	if err := repository.Db.Where("name = ? AND skill_id != ?", updatedSkill.Name, updatedSkill.SkillID).First(&existingSkill).Error; err == nil {
 		out := response.ErrorMsg{
 			Code:    http.StatusBadRequest,
 			Field:   "Name",

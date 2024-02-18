@@ -133,7 +133,7 @@ func (repository *SectionRepo) UpdateSection(c *gin.Context) {
 
 	// Check if the name already exists in the database
 	var existingSections models.Organizations
-	if err := repository.Db.Where("name = ?", updatedSection.Name).First(&existingSections).Error; err == nil {
+	if err := repository.Db.Where("name = ? AND section_id != ?", updatedSection.Name, updatedSection.SectionID).First(&existingSections).Error; err == nil {
 		out := response.ErrorMsg{
 			Code:    http.StatusBadRequest,
 			Field:   "Name",
