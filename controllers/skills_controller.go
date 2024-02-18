@@ -209,6 +209,17 @@ func (repository *SkillRepo) CreateSkill(c *gin.Context) {
 		return
 	}
 
+	// Check if the levels are unique for the new skill
+	if err := validateSkillLevels(repository.Db, Skill.SkillsLevels); err != nil {
+		out := response.ErrorMsg{
+			Code:    http.StatusBadRequest,
+			Field:   "Levels",
+			Message: "Levels must be unique for each skill.",
+		}
+		c.JSON(http.StatusBadRequest, out)
+		return
+	}
+
 	err := models.CreateSkill(repository.Db, &Skill)
 	if err != nil {
 		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err})
@@ -309,4 +320,25 @@ func (repository *SkillRepo) DeleteSkillById(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, gin.H{"message": "Skill and associated records deleted successfully"})
+}
+
+// validateSkillLevels ensures that the levels in SkillsLevelsInSkills do not have the same level
+func validateSkillLevels(db *gorm.DB, skillsLevels []models.SkillsLevelsInSkills) error {
+	// Create a map to store unique levels
+	uniqueLevels := make(map[int]bool)
+
+	// Iterate through each SkillsLevelsInSkills
+	for _, sl := range skillsLevels {
+		// Check if the level already exists in the map
+		if uniqueLevels[sl.LevelID] {
+			// Found duplicate level, return an error
+			return errors.New("duplicate level in SkillsLevelsInSkills")
+		}
+
+		// Add the level to the map
+		uniqueLevels[sl.LevelID] = true
+	}
+
+	// No duplicate levels found
+	return nil
 }
