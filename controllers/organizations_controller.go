@@ -138,7 +138,7 @@ func (repository *OrganizationsRepo) UpdateOrganization(c *gin.Context) {
 
 	currentOrganization.Name = updatedOrganization.Name
 	currentOrganization.Description = updatedOrganization.Description
-	currentOrganization.Description = updatedOrganization.Description
+	currentOrganization.ImageUrl = updatedOrganization.ImageUrl
 
 	// existingOrganization.Name = updatedOrganization.Name
 	// Update other fields as needed
