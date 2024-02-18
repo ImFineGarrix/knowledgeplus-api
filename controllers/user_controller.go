@@ -156,6 +156,15 @@ func (repository *UserRepo) UpdateUser(c *gin.Context) {
 		return
 	}
 
+	// Hash the user's password before saving it to the database
+	hashedPassword, err := hashPassword(updatedUser.Password)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to hash the password"})
+		return
+	}
+
+	updatedUser.Password = hashedPassword
+
 	err = models.UpdateUser(repository.Db, &updatedUser)
 	if err != nil {
 		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err})
