@@ -25,7 +25,7 @@ func NewUserRepo() *UserRepo {
 
 // GetUsers retrieves all User records from the database.
 func (repository *UserRepo) GetUsers(c *gin.Context) {
-	var users []models.UserResponse
+	var users []models.UserGetResponse
 
 	err := models.GetAllUsers(repository.Db, &users)
 	if err != nil {
@@ -39,7 +39,7 @@ func (repository *UserRepo) GetUsers(c *gin.Context) {
 // GetUserById retrieves a User by its ID from the database.
 func (repository *UserRepo) GetUserById(c *gin.Context) {
 	id, _ := strconv.Atoi(c.Param("id"))
-	var user models.UserResponse
+	var user models.UserGetResponse
 
 	err := models.GetUserById(repository.Db, &user, uint(id))
 	if err != nil {
