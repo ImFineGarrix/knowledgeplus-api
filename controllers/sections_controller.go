@@ -80,7 +80,7 @@ func (repository *SectionRepo) CreateSection(c *gin.Context) {
 	}
 
 	// Check if the name already exists in the database
-	var existingSection models.Organizations
+	var existingSection models.Section
 	if err := repository.Db.Where("name = ?", section.Name).First(&existingSection).Error; err == nil {
 		out := response.ErrorMsg{
 			Code:    http.StatusBadRequest,
@@ -90,7 +90,6 @@ func (repository *SectionRepo) CreateSection(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, out)
 		return
 	}
-
 	err := models.Createsection(repository.Db, &section)
 	if err != nil {
 		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err})
@@ -138,7 +137,7 @@ func (repository *SectionRepo) UpdateSection(c *gin.Context) {
 	}
 
 	// Check if the name already exists in the database
-	var existingSections models.Organizations
+	var existingSections models.Section
 	if err := repository.Db.Where("name = ? AND section_id != ?", updatedSection.Name, updatedSection.SectionID).First(&existingSections).Error; err == nil {
 		out := response.ErrorMsg{
 			Code:    http.StatusBadRequest,
