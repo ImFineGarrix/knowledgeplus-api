@@ -122,7 +122,7 @@ func GetAllCoursesWithFilter(db *gorm.DB, page, limit int, search string) (cours
 	offset := (page - 1) * limit
 
 	// Create a query builder with preloads and filters
-	query := db.Preload("SkillsLevels").Preload("Organization").Offset(offset).Limit(limit)
+	query := db.Preload("SkillsLevels.Skill").Preload("SkillsLevels.Career").Preload("Organization").Offset(offset).Limit(limit)
 
 	if search != "" {
 		query = query.Where("name LIKE ?", "%"+search+"%")

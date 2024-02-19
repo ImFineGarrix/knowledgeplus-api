@@ -3,7 +3,6 @@ package routes
 import (
 	"knowledgeplus/go-api/controllers"
 	"knowledgeplus/go-api/middleware"
-	// "knowledgeplus/go-api/middleware"
 
 	"github.com/gin-gonic/gin"
 )
