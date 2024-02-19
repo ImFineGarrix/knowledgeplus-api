@@ -19,7 +19,7 @@ func GetErrorMsg(fe validator.FieldError) string {
 	case "required":
 		return fe.Field() + " is required"
 	case "max":
-		return "lenght of " + fe.Field() + "must not be over."
+		return "lenght of " + fe.Field() + " must not be over."
 	case "email":
 		return "email field is not correct format."
 	}

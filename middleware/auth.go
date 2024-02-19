@@ -2,6 +2,7 @@ package middleware
 
 import (
 	"fmt"
+	"knowledgeplus/go-api/response"
 	"net/http"
 	"os"
 	"strings"
@@ -15,9 +16,13 @@ var secretKey = os.Getenv("SECRET_KEY")
 func AuthMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		tokenString := c.GetHeader("Authorization")
-
 		if tokenString == "" {
-			c.JSON(http.StatusUnauthorized, gin.H{"error": "Missing Authorization header"})
+			out := response.ErrorMsg{
+				Code:    http.StatusUnauthorized,
+				Field:   "Header",
+				Message: "Missing Authorization header",
+			}
+			c.JSON(http.StatusUnauthorized, out)
 			c.Abort()
 			return
 		}
@@ -30,7 +35,12 @@ func AuthMiddleware() gin.HandlerFunc {
 		})
 
 		if err != nil || !token.Valid {
-			c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid token"})
+			out := response.ErrorMsg{
+				Code:    http.StatusUnauthorized,
+				Field:   "Token",
+				Message: "Invalid token",
+			}
+			c.JSON(http.StatusUnauthorized, out)
 			c.Abort()
 			return
 		}
@@ -38,14 +48,24 @@ func AuthMiddleware() gin.HandlerFunc {
 		// Check the user's role
 		claims, ok := token.Claims.(jwt.MapClaims)
 		if !ok {
-			c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid token claims"})
+			out := response.ErrorMsg{
+				Code:    http.StatusUnauthorized,
+				Field:   "Token",
+				Message: "Invalid token claims",
+			}
+			c.JSON(http.StatusUnauthorized, out)
 			c.Abort()
 			return
 		}
 
 		role, ok := claims["role"].(string)
 		if !ok {
-			c.JSON(http.StatusForbidden, gin.H{"error": "Role not specified in token"})
+			out := response.ErrorMsg{
+				Code:    http.StatusUnauthorized,
+				Field:   "Role",
+				Message: "Role not specified in token",
+			}
+			c.JSON(http.StatusForbidden, out)
 			c.Abort()
 			return
 		}
@@ -55,7 +75,12 @@ func AuthMiddleware() gin.HandlerFunc {
 
 		// Check for specific routes that require "owner" role
 		if isOwnerRoute(c) && role != "owner" {
-			c.JSON(http.StatusForbidden, gin.H{"error": "Permission denied"})
+			out := response.ErrorMsg{
+				Code:    http.StatusForbidden,
+				Field:   "Role",
+				Message: "Permission denied",
+			}
+			c.JSON(http.StatusForbidden, out)
 			c.Abort()
 			return
 		}
@@ -82,3 +107,17 @@ func isOwnerRoute(c *gin.Context) bool {
 
 	return false
 }
+
+// func errAuthResponse(c *gin.Context, code int, message string) {
+// 	err := errors.New(message)
+// 	var ve validator.ValidationErrors
+// 			out = response.ErrorMsg{
+// 				Code:    http.StatusBadRequest,
+// 				Field:   fe.Field(),
+// 				Message: response.GetErrorMsg(fe),
+// 			}
+// 		c.JSON(http.StatusCreated, out)
+// 	} else {
+// 		c.JSON(code, gin.H{"error": message})
+// 	}
+// }
