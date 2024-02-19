@@ -47,9 +47,9 @@ func (UserGetResponse) TableName() string {
 	return "INT371_02.users"
 }
 
-// GetAllUsers retrieves all user records from the database.
+// GetAllUsers retrieves all user records from the database excluding those with the role "owner".
 func GetAllUsers(db *gorm.DB, users *[]UserGetResponse) (err error) {
-	err = db.Find(users).Error
+	err = db.Where("role <> ?", "owner").Find(users).Error
 	if err != nil {
 		return err
 	}
