@@ -116,6 +116,7 @@ func GetSkillsByCourseId(db *gorm.DB, courseID, page, limit int, skills *[]Skill
 		Preload("SkillsLevels").
 		Joins("JOIN skills_levels ON skills.skill_id = skills_levels.skill_id").
 		Where("skills_levels.course_id = ?", courseID).
+		Distinct().
 		Offset(offset).Limit(limit).
 		Find(skills).Error
 	if err != nil {
@@ -152,6 +153,7 @@ func GetSkillsByCareerId(db *gorm.DB, careerID, page, limit int, skills *[]Skill
 		Preload("SkillsLevels").
 		Joins("JOIN skills_levels ON skills.skill_id = skills_levels.skill_id").
 		Where("skills_levels.career_id = ?", careerID).
+		Distinct().
 		Offset(offset).Limit(limit).
 		Find(skills).Error
 	if err != nil {
