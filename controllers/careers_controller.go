@@ -4,10 +4,12 @@ import (
 	"errors"
 	"knowledgeplus/go-api/database"
 	"knowledgeplus/go-api/models"
+	"knowledgeplus/go-api/response"
 	"net/http"
 	"strconv"
 
 	"github.com/gin-gonic/gin"
+	"github.com/go-playground/validator/v10"
 	"gorm.io/gorm"
 )
 
@@ -21,29 +23,7 @@ func NewCareerRepo() *CareerRepo {
 	return &CareerRepo{Db: db}
 }
 
-// // get Careers
-// func (repository *CareerRepo) GetCareers(c *gin.Context) {
-// 	var Career []models.Career
-// 	print(Career)
-// 	err := models.GetCareers(repository.Db, &Career)
-// 	if err != nil {
-// 		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err})
-// 		return
-// 	}
-// 	c.JSON(http.StatusOK, Career)
-// }
-
-// func (repository *CareerRepo) GetCareersWithHaveCategories(c *gin.Context) {
-// 	var Career []models.Career
-// 	print(Career)
-// 	err := models.GetCareersWithHaveCategories(repository.Db, &Career)
-// 	if err != nil {
-// 		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err})
-// 		return
-// 	}
-// 	c.JSON(http.StatusOK, Career)
-// }
-
+// get all Careers use with backoffice
 // get Careers with pagination
 func (repository *CareerRepo) GetCareers(c *gin.Context) {
 	var (
@@ -74,40 +54,9 @@ func (repository *CareerRepo) GetCareers(c *gin.Context) {
 	})
 }
 
-// // get Careers with categories and pagination
-// func (repository *CareerRepo) GetCareersWithHaveCategories(c *gin.Context) {
-// 	var (
-// 		careers    []models.Career
-// 		pagination models.Pagination
-// 		err        error
-// 	)
-
-// 	page, err := strconv.Atoi(c.Query("page"))
-// 	if err != nil || page <= 0 {
-// 		page = 1
-// 	}
-
-// 	limit, err := strconv.Atoi(c.Query("limit"))
-// 	if err != nil || limit <= 0 {
-// 		limit = 10 // set a default limit
-// 	}
-
-// 	careers, pagination, err = models.GetCareersWithHaveCategories(repository.Db, page, limit)
-// 	if err != nil {
-// 		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-// 		return
-// 	}
-
-// 	c.JSON(http.StatusOK, gin.H{
-// 		"careers":    careers,
-// 		"pagination": pagination,
-// 	})
-// }
-
-// get Careers with categories and pagination
-func (repository *CareerRepo) GetCareersWithHaveCategories(c *gin.Context) {
+// GetAllCareers retrieves all Career records from the database with filtering and pagination. user with frontend
+func (repository *CareerRepo) GetAllCareersWithFilters(c *gin.Context) {
 	var (
-		careerIDs  []uint
 		careers    []models.Career
 		pagination models.Pagination
 		err        error
@@ -123,47 +72,73 @@ func (repository *CareerRepo) GetCareersWithHaveCategories(c *gin.Context) {
 		limit = 10 // set a default limit
 	}
 
-	// Query distinct career IDs
-	err = repository.Db.
-		Model(&models.Career{}).
-		Select("DISTINCT career_id").
-		Limit(limit).
-		Offset((page-1)*limit).
-		Pluck("career_id", &careerIDs).
-		Error
+	search := c.Query("search")
+	groupID, _ := strconv.ParseInt(c.Query("group"), 10, 64)
+
+	careers, pagination, err = models.GetCareersWithFilters(NewCareerRepo().Db, page, limit, search, groupID)
 	if err != nil {
 		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 
-	// Query complete careers based on distinct IDs
-	err = repository.Db.
-		Preload("Categories").
-		Preload("Skills").
-		Where("career_id IN ?", careerIDs).
-		Find(&careers).
-		Error
+	c.JSON(http.StatusOK, gin.H{
+		"careers":    careers,
+		"pagination": pagination,
+	})
+}
+
+// GetCareersByCourseId retrieves careers based on the provided CourseID with pagination.
+func (repository *CareerRepo) GetCareersByCourseId(c *gin.Context) {
+	courseID, err := strconv.Atoi(c.Param("course_id"))
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid CourseID"})
+		return
+	}
+
+	page, err := strconv.Atoi(c.Query("page"))
+	if err != nil || page <= 0 {
+		page = 1
+	}
+
+	limit, err := strconv.Atoi(c.Query("limit"))
+	if err != nil || limit <= 0 {
+		limit = 10 // set a default limit
+	}
+
+	careers, pagination, err := models.GetCareersByCourseId(repository.Db, courseID, page, limit)
 	if err != nil {
 		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 
-	// Count total careers (ignoring pagination)
-	var totalCareers int64
-	err = repository.Db.Model(&models.Career{}).Distinct("career_id").Count(&totalCareers).Error
+	c.JSON(http.StatusOK, gin.H{
+		"careers":    careers,
+		"pagination": pagination,
+	})
+}
+
+// GetCareersBySkillId retrieves careers based on the provided SkillID with pagination.
+func (repository *CareerRepo) GetCareersBySkillId(c *gin.Context) {
+	skillID, err := strconv.Atoi(c.Param("skill_id"))
 	if err != nil {
-		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid SkillID"})
 		return
 	}
 
-	// Convert totalCareers to int
-	totalCareersInt := int(totalCareers)
+	page, err := strconv.Atoi(c.Query("page"))
+	if err != nil || page <= 0 {
+		page = 1
+	}
 
-	// Create pagination information
-	pagination = models.Pagination{
-		Page:  page,
-		Total: totalCareersInt,
-		Limit: limit,
+	limit, err := strconv.Atoi(c.Query("limit"))
+	if err != nil || limit <= 0 {
+		limit = 10 // set a default limit
+	}
+
+	careers, pagination, err := models.GetCareersBySkillId(repository.Db, skillID, page, limit)
+	if err != nil {
+		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
 	}
 
 	c.JSON(http.StatusOK, gin.H{
@@ -192,20 +167,45 @@ func (repository *CareerRepo) GetCareer(c *gin.Context) {
 // CreateCareer creates a new Career record.
 func (repository *CareerRepo) CreateCareer(c *gin.Context) {
 	var Career models.Career
-	// var CategoriesID = Career.Categories[0].CategoryID
+
+	// Bind the JSON request to the Career struct
 	if err := c.ShouldBindJSON(&Career); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		var ve validator.ValidationErrors
+		if errors.As(err, &ve) {
+			out := make([]response.ErrorMsg, len(ve))
+			for i, fe := range ve {
+				out[i] = response.ErrorMsg{
+					Code:    http.StatusBadRequest,
+					Field:   fe.Field(),
+					Message: response.GetErrorMsg(fe),
+				}
+			}
+			c.JSON(http.StatusBadRequest, out)
+		} else {
+			c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			return
+		}
 		return
 	}
 
-	// fmt.Println(Career.Categories[0].CategoryID)
-	// fmt.Println(&Career)
+	// Check if the name already exists in the database
+	var existingCareer models.Career
+	if err := repository.Db.Where("name = ?", Career.Name).First(&existingCareer).Error; err == nil {
+		out := response.ErrorMsg{
+			Code:    http.StatusBadRequest,
+			Field:   "Name",
+			Message: "Name already used.",
+		}
+		c.JSON(http.StatusBadRequest, out)
+		return
+	}
+
+	// Create the Career record
 	err := models.CreateCareer(repository.Db, &Career)
 	if err != nil {
 		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err})
 		return
 	}
-	// fmt.Println(Career.CareerID)
 
 	c.JSON(http.StatusCreated, Career)
 }
@@ -229,7 +229,33 @@ func (repository *CareerRepo) UpdateCareer(c *gin.Context) {
 
 	// Bind the updated data from the request
 	if err := c.ShouldBindJSON(&updatedCareer); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		var ve validator.ValidationErrors
+		if errors.As(err, &ve) {
+			out := make([]response.ErrorMsg, len(ve))
+			for i, fe := range ve {
+				out[i] = response.ErrorMsg{
+					Code:    http.StatusBadRequest,
+					Field:   fe.Field(),
+					Message: response.GetErrorMsg(fe),
+				}
+			}
+			c.JSON(http.StatusCreated, out)
+		} else {
+			c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			return
+		}
+		return
+	}
+
+	// Check if the name already exists in the database
+	var existingCareer models.Career
+	if err := repository.Db.Where("name = ? AND career_id != ?", updatedCareer.Name, updatedCareer.CareerID).First(&existingCareer).Error; err == nil {
+		out := response.ErrorMsg{
+			Code:    http.StatusBadRequest,
+			Field:   "Name",
+			Message: "Name already used.",
+		}
+		c.JSON(http.StatusBadRequest, out)
 		return
 	}
 
@@ -261,14 +287,14 @@ func (repository *CareerRepo) DeleteCareer(c *gin.Context) {
 	}
 
 	// Delete associated records in categories_careers table
-	err = repository.Db.Exec("DELETE FROM categories_careers WHERE career_id = ?", id).Error
+	err = repository.Db.Exec("DELETE FROM groups_careers WHERE career_id = ?", id).Error
 	if err != nil {
 		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err})
 		return
 	}
 
 	// Delete associated records in careers_skills table
-	err = repository.Db.Exec("DELETE FROM careers_skills WHERE career_id = ?", id).Error
+	err = repository.Db.Exec("DELETE FROM skills_levels WHERE career_id = ?", id).Error
 	if err != nil {
 		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err})
 		return
