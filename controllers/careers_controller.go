@@ -286,7 +286,7 @@ func (repository *CareerRepo) DeleteCareer(c *gin.Context) {
 		return
 	}
 
-	// Delete associated records in categories_careers table
+	// Delete associated records in groups_careers table
 	err = repository.Db.Exec("DELETE FROM groups_careers WHERE career_id = ?", id).Error
 	if err != nil {
 		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err})
@@ -294,7 +294,7 @@ func (repository *CareerRepo) DeleteCareer(c *gin.Context) {
 	}
 
 	// Delete associated records in careers_skills table
-	err = repository.Db.Exec("DELETE FROM skills_levels WHERE career_id = ?", id).Error
+	err = repository.Db.Exec("DELETE FROM careers_skills_levels WHERE career_id = ?", id).Error
 	if err != nil {
 		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err})
 		return
@@ -308,4 +308,49 @@ func (repository *CareerRepo) DeleteCareer(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, gin.H{"message": "Career and associated records deleted successfully"})
+}
+
+func (repository *CareerRepo) RecommendSkillsLevelsByCareer(c *gin.Context) {
+	var Career models.CareerForRecommendSkillsLevels
+	var careerBody models.Career
+
+	// Bind the JSON request to the Career struct
+	if err := c.ShouldBindJSON(&Career); err != nil {
+		var ve validator.ValidationErrors
+		if errors.As(err, &ve) {
+			out := make([]response.ErrorMsg, len(ve))
+			for i, fe := range ve {
+				out[i] = response.ErrorMsg{
+					Code:    http.StatusBadRequest,
+					Field:   fe.Field(),
+					Message: response.GetErrorMsg(fe),
+				}
+			}
+			c.JSON(http.StatusBadRequest, out)
+			return
+		}
+		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	// Find the career record
+	err := repository.Db.Where("career_id = ?", Career.CurrentCareerID).First(&careerBody).Error
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			c.AbortWithStatusJSON(http.StatusNotFound, gin.H{"error": "Record not found!"})
+			return
+		}
+
+		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err})
+		return
+	}
+
+	// Call the function to get the differences
+	differences, err := models.RecommendSkillsLevelsByCareer(repository.Db, &Career)
+	if err != nil {
+		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	// Return differences in the response
+	c.JSON(http.StatusOK, differences)
 }

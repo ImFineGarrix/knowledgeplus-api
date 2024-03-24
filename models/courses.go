@@ -11,6 +11,7 @@ type Course struct {
 	LearnHours      string                  `gorm:"column:learn_hours; default:NULL; type:VARCHAR(45);" json:"learn_hours"`
 	AcademicYear    string                  `gorm:"column:academic_year; default:NULL; type:VARCHAR(45);" json:"academic_year"`
 	CourseLink      string                  `gorm:"column:course_link; default:NULL; type:LONGTEXT;" json:"course_link"`
+	CourseType      string                  `gorm:"column:course_type; default:NULL; type:VARCHAR(45);" json:"course_type"`
 	LearningOutcome string                  `gorm:"column:learinig_outcome; default:NULL; type:LONGTEXT;" json:"learning_outcome"`
 	Organization    OrganizationInCourses   `gorm:"foreignKey:OrganizationID;references:OrganizationID" json:"organization"`
 	OrganizationID  int                     `gorm:"column:organization_id" json:"organization_id"`
@@ -45,7 +46,8 @@ type SkillsLevelsInCourses struct {
 	LevelID        int    `gorm:"column:level_id; not null" json:"level_id"`
 	// CourseID       *int             `gorm:"column:course_id;" json:"-"`
 	// CareerID       *int             `gorm:"column:career_id;" json:"career_id"`
-	Skill SkillInCourses `gorm:"foreignKey:SkillID;references:SkillID" json:"skill"`
+	Skill   SkillInCourses    `gorm:"foreignKey:SkillID;references:SkillID" json:"skill"`
+	Careers []CareerInCourses `gorm:"many2many:careers_skills_levels;foreignKey:SkillsLevelsID;joinForeignKey:SkillsLevelsID;References:CareerID;joinReferences:CareerID" json:"careers"`
 	// Career         *CareerInCourses `gorm:"foreignKey:CareerID; References:CareerID;" json:"career"`
 }
 
@@ -59,11 +61,11 @@ type SkillInCourses struct {
 }
 
 type CareerInCourses struct {
-	CareerID     int                     `gorm:"column:career_id;primaryKey;autoIncrement;" json:"career_id"`
-	Name         string                  `gorm:"column:name; not null; type:VARCHAR(255)" json:"name" binding:"required,max=255"`
-	Description  string                  `gorm:"column:description; default:NULL; type:LONGTEXT;"  json:"description" binding:"max=1500"`
-	Groups       []GroupsInCareers       `gorm:"many2many:groups_careers;foreignKey:CareerID;joinForeignKey:CareerID;References:GroupID;joinReferences:GroupID" json:"-"`
-	SkillsLevels []SkillsLevelsInCareers `gorm:"foreignKey:CareerID; References:CareerID;" json:"-"`
+	CareerID    int    `gorm:"column:career_id;primaryKey;autoIncrement;" json:"career_id"`
+	Name        string `gorm:"column:name; not null; type:VARCHAR(255)" json:"name" binding:"required,max=255"`
+	Description string `gorm:"column:description; default:NULL; type:LONGTEXT;"  json:"description" binding:"max=1500"`
+	// Groups      []GroupsInCareers `gorm:"many2many:groups_careers;foreignKey:CareerID;joinForeignKey:CareerID;References:GroupID;joinReferences:GroupID" json:"-"`
+	// SkillsLevels []SkillsLevelsInCareers `gorm:"foreignKey:CareerID; References:CareerID;" json:"-"`
 }
 
 func (Course) TableName() string {
@@ -93,7 +95,7 @@ func (CareerInCourses) TableName() string {
 // GetCourses retrieves all Course records from the database with pagination.
 func GetCourses(db *gorm.DB, page, limit int, courses *[]Course) (pagination Pagination, err error) {
 	offset := (page - 1) * limit
-	err = db.Preload("Organization").Preload("SkillsLevels.Skill").Model(&Course{}).
+	err = db.Preload("Organization").Preload("SkillsLevels.Skill").Preload("SkillsLevels.Careers").Preload("SkillsLevels").Model(&Course{}).
 		Offset(offset).Limit(limit).
 		Find(&courses).Error
 	if err != nil {
@@ -122,7 +124,7 @@ func GetAllCoursesWithFilter(db *gorm.DB, page, limit int, search string) (cours
 	offset := (page - 1) * limit
 
 	// Create a query builder with preloads and filters
-	query := db.Preload("SkillsLevels.Skill").Preload("SkillsLevels.Career").Preload("Organization").Offset(offset).Limit(limit)
+	query := db.Preload("Organization").Preload("SkillsLevels.Skill").Preload("SkillsLevels.Careers").Preload("SkillsLevels").Offset(offset).Limit(limit)
 
 	if search != "" {
 		query = query.Where("name LIKE ?", "%"+search+"%")
@@ -153,10 +155,7 @@ func GetAllCoursesWithFilter(db *gorm.DB, page, limit int, search string) (cours
 // GetCoursesBySkillId retrieves courses based on the provided SkillID with pagination.
 func GetCoursesBySkillId(db *gorm.DB, skillID, page, limit int, courses *[]Course) (pagination Pagination, err error) {
 	offset := (page - 1) * limit
-	err = db.
-		Preload("Organization").
-		Preload("SkillsLevels.Skill").
-		Preload("SkillsLevels.Career").
+	err = db.Preload("Organization").Preload("SkillsLevels.Skill").Preload("SkillsLevels.Careers").Preload("SkillsLevels").
 		Joins("JOIN skills_levels ON courses.course_id = skills_levels.course_id").
 		Where("skills_levels.skill_id = ?", skillID).
 		Distinct().
@@ -169,10 +168,7 @@ func GetCoursesBySkillId(db *gorm.DB, skillID, page, limit int, courses *[]Cours
 
 	// Count total courses for pagination
 	var totalCount int64
-	if err := db.Model(&Course{}).
-		Preload("Organization").
-		Preload("SkillsLevels.Skill").
-		Preload("SkillsLevels.Career").
+	if err := db.Model(&Course{}).Preload("Organization").Preload("SkillsLevels.Skill").Preload("SkillsLevels.Careers").Preload("SkillsLevels").
 		Joins("JOIN skills_levels ON courses.course_id = skills_levels.course_id").
 		Where("skills_levels.skill_id = ?", skillID).
 		Count(&totalCount).Error; err != nil {
@@ -193,10 +189,7 @@ func GetCoursesBySkillId(db *gorm.DB, skillID, page, limit int, courses *[]Cours
 // GetCoursesByCareerId retrieves courses based on the provided CareerID with pagination.
 func GetCoursesByCareerId(db *gorm.DB, careerID, page, limit int, courses *[]CourseWithoutSkillLevels) (pagination Pagination, err error) {
 	offset := (page - 1) * limit
-	err = db.
-		Preload("Organization").
-		Preload("SkillsLevels.Skill").
-		Preload("SkillsLevels.Career").
+	err = db.Preload("Organization").Preload("SkillsLevels.Skill").Preload("SkillsLevels.Careers").Preload("SkillsLevels").
 		Joins("JOIN skills_levels ON courses.course_id = skills_levels.course_id").
 		Where("skills_levels.career_id = ?", careerID).
 		Distinct().
@@ -209,10 +202,7 @@ func GetCoursesByCareerId(db *gorm.DB, careerID, page, limit int, courses *[]Cou
 
 	// Count total courses for pagination
 	var totalCount int64
-	if err := db.Model(&CourseWithoutSkillLevels{}).
-		Preload("Organization").
-		Preload("SkillsLevels.Skill").
-		Preload("SkillsLevels.Career").
+	if err := db.Model(&CourseWithoutSkillLevels{}).Preload("Organization").Preload("SkillsLevels.Skill").Preload("SkillsLevels.Careers").Preload("SkillsLevels").
 		Joins("JOIN skills_levels ON courses.course_id = skills_levels.course_id").
 		Where("skills_levels.career_id = ?", careerID).
 		Count(&totalCount).Error; err != nil {
@@ -241,7 +231,7 @@ func CreateCourse(db *gorm.DB, course *Course) (err error) {
 
 // GetCourseById retrieves a Course by its ID from the database.
 func GetCourseById(db *gorm.DB, course *Course, id int) (err error) {
-	err = db.Where("course_id = ?", id).Preload("Organization").Preload("SkillsLevels.Skill").Preload("SkillsLevels.Career").
+	err = db.Where("course_id = ?", id).Preload("Organization").Preload("Organization").Preload("SkillsLevels.Skill").Preload("SkillsLevels.Careers").Preload("SkillsLevels").
 		First(course).
 		Error
 	if err != nil {
@@ -254,40 +244,56 @@ func GetCourseById(db *gorm.DB, course *Course, id int) (err error) {
 func UpdateCourse(db *gorm.DB, updatedCourse *Course) (err error) {
 	// Begin a transaction
 	tx := db.Begin()
-	defer func() {
-		if r := recover(); r != nil {
-			tx.Rollback()
-		}
-	}()
+	// defer func() {
+	// 	if r := recover(); r != nil {
+	// 		tx.Rollback()
+	// 	}
+	// }()
 
 	// Check if the course record exists
 	existingCourse := &Course{}
-	err = tx.Preload("Organization").Preload("SkillsLevels.Skill").Preload("SkillsLevels.Career").First(existingCourse, "course_id = ?", updatedCourse.CourseID).Error
+	err = tx.Preload("Organization").Preload("SkillsLevels.Skill").Preload("SkillsLevels.Careers").Preload("SkillsLevels").First(existingCourse, "course_id = ?", updatedCourse.CourseID).Error
 	if err != nil {
 		tx.Rollback()
 		return err
 	}
 
-	// Delete all existing SkillsLevels records for the specified course
-	err = tx.Where("course_id = ?", existingCourse.CourseID).Delete(&SkillsLevels{}).Error
-	if err != nil {
-		tx.Rollback()
-		return err
-	}
+	// // Delete all existing SkillsLevels records for the specified course
+	// err = tx.Where("course_id = ?", existingCourse.CourseID).Delete(&SkillsLevels{}).Error
+	// if err != nil {
+	// 	tx.Rollback()
+	// 	return err
+	// }
 
-	// Commit the delete operation
-	if err := tx.Commit().Error; err != nil {
-		return err
-	}
+	// // Commit the delete operation
+	// if err := tx.Commit().Error; err != nil {
+	// 	return err
+	// }
 
-	// Begin a new transaction for the update operation
-	tx = db.Begin()
+	// // Begin a new transaction for the update operation
+	// tx = db.Begin()
 
 	// Save the updated course
 	err = tx.Save(updatedCourse).Error
 	if err != nil {
 		tx.Rollback()
 		return err
+	}
+
+	// Clear existing associations within the transaction
+	err = tx.Model(existingCourse).Association("SkillsLevels").Clear()
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	// Update existing skillslevels with the new one (if provided)
+	if len(updatedCourse.SkillsLevels) > 0 {
+		err = tx.Model(existingCourse).Association("SkillsLevels").Append(updatedCourse.SkillsLevels)
+		if err != nil {
+			tx.Rollback()
+			return err
+		}
 	}
 
 	// Commit the transaction for the update operation

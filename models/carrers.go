@@ -1,6 +1,8 @@
 package models
 
 import (
+	"fmt"
+
 	"gorm.io/gorm"
 )
 
@@ -25,7 +27,7 @@ type SkillsLevelsInCareers struct {
 	AbilityDesc    string            `gorm:"column:ability_desc;" json:"ability_desc"`
 	LevelID        int               `gorm:"column:level_id; not null" json:"level_id"`
 	Skill          SkillInCareers    `gorm:"foreignKey:SkillID;references:SkillID" json:"skill"`
-	Course         []CourseInCareers `gorm:"many2many:courses_skills_levels;foreignKey:SkillsLevelsID;joinForeignKey:SkillsLevelsID;References:CourseID;joinReferences:CourseID" json:"courses"`
+	Courses        []CourseInCareers `gorm:"many2many:courses_skills_levels;foreignKey:SkillsLevelsID;joinForeignKey:SkillsLevelsID;References:CourseID;joinReferences:CourseID" json:"courses"`
 }
 
 type SkillInCareers struct {
@@ -55,6 +57,16 @@ type OrganizationInCareer struct {
 	Name           string `gorm:"column:name; not null; type:VARCHAR(255)" json:"name" binding:"max=255"`
 	Description    string `gorm:"column:description; default:NULL; type:LONGTEXT;" json:"description" binding:"max=1500"`
 	ImageUrl       string `gorm:"column:image_url; default:NULL; type:LONGTEXT;" json:"image_url" binding:"max=5000"`
+}
+
+type CareerForRecommendSkillsLevels struct {
+	CurrentCareerID  int64 `json:"current_career_id"`
+	UserSkillsLevels []int `json:"user_skills_levels"`
+}
+
+type ReturnRecommendSkillsLevels struct {
+	CurrentCareer          Career                  `json:"current_career"`
+	DifferenceSkillsLevels []SkillsLevelsInCareers `json:"difference_skills_levels"`
 }
 
 // type UpdateCareerModels struct {
@@ -92,7 +104,7 @@ func (OrganizationInCareer) TableName() string {
 // GetCareers retrieves all Career records from the database with pagination.
 func GetCareers(db *gorm.DB, page, limit int) (careers []Career, pagination Pagination, err error) {
 	offset := (page - 1) * limit
-	err = db.Preload("SkillsLevels.Skill").Preload("SkillsLevels.Course.Organization").Preload("SkillsLevels").Preload("Groups").
+	err = db.Preload("SkillsLevels.Skill").Preload("SkillsLevels.Courses.Organization").Preload("Groups").
 		Offset(offset).Limit(limit).
 		Find(&careers).Error
 	if err != nil {
@@ -119,10 +131,7 @@ func GetCareers(db *gorm.DB, page, limit int) (careers []Career, pagination Pagi
 // GetCareersByCourseId retrieves careers based on the provided CourseID with pagination.
 func GetCareersByCourseId(db *gorm.DB, courseID, page, limit int) (careers []Career, pagination Pagination, err error) {
 	offset := (page - 1) * limit
-	err = db.
-		Preload("SkillsLevels.Skill").
-		Preload("Groups").
-		Preload("SkillsLevels.Course.Organization").
+	err = db.Preload("SkillsLevels.Skill").Preload("SkillsLevels.Courses.Organization").Preload("Groups").
 		Joins("JOIN skills_levels ON careers.career_id = skills_levels.career_id").
 		Where("skills_levels.course_id = ?", courseID).
 		Group("careers.career_id").
@@ -161,7 +170,7 @@ func GetCareersWithFilters(db *gorm.DB, page, limit int, search string, groupID 
 	offset := (page - 1) * limit
 
 	// Create a query builder with preloads and filters
-	query := db.Preload("SkillsLevels.Skill").Preload("SkillsLevels.Course.Organization").Preload("Groups").
+	query := db.Preload("SkillsLevels.Skill").Preload("SkillsLevels.Courses.Organization").Preload("Groups").
 		Offset(offset).Limit(limit)
 
 	if search != "" {
@@ -198,10 +207,7 @@ func GetCareersWithFilters(db *gorm.DB, page, limit int, search string, groupID 
 // GetCareersBySkillId retrieves careers based on the provided SkillID with pagination.
 func GetCareersBySkillId(db *gorm.DB, skillID, page, limit int) (careers []Career, pagination Pagination, err error) {
 	offset := (page - 1) * limit
-	err = db.
-		Preload("SkillsLevels.Skill").
-		Preload("Groups").
-		Preload("SkillsLevels.Course.Organization").
+	err = db.Preload("SkillsLevels.Skill").Preload("SkillsLevels.Courses.Organization").Preload("Groups").
 		Joins("JOIN skills_levels ON careers.career_id = skills_levels.career_id").
 		Where("skills_levels.skill_id = ?", skillID).
 		Distinct().
@@ -233,7 +239,7 @@ func GetCareersBySkillId(db *gorm.DB, skillID, page, limit int) (careers []Caree
 
 // GetCareerById retrieves a Career by its ID from the database.
 func GetCareerById(db *gorm.DB, Career *Career, id int) (err error) {
-	err = db.Where("career_id = ?", id).Preload("SkillsLevels.Skill").Preload("SkillsLevels.Course.Organization").Preload("Groups").First(Career).Error
+	err = db.Where("career_id = ?", id).Preload("SkillsLevels.Skill").Preload("SkillsLevels.Courses.Organization").Preload("Groups").First(Career).Error
 	if err != nil {
 		return err
 	}
@@ -263,26 +269,26 @@ func UpdateCareer(db *gorm.DB, updatedCareer *Career) (err error) {
 	}()
 
 	// Check if the career record exists
-	err = tx.Where("career_id = ?", updatedCareer.CareerID).Preload("SkillsLevels.Skill").Preload("SkillsLevels.Course.Organization").First(existingCareer).Error
+	err = tx.Where("career_id = ?", updatedCareer.CareerID).Preload("SkillsLevels.Skill").Preload("SkillsLevels.Courses.Organization").Preload("Groups").First(existingCareer).Error
 	if err != nil {
 		tx.Rollback()
 		return err
 	}
 
-	// Delete all existing SkillsLevels records for the specified course
-	err = tx.Where("career_id = ?", existingCareer.CareerID).Delete(&SkillsLevels{}).Error
-	if err != nil {
-		tx.Rollback()
-		return err
-	}
+	// // Delete all existing SkillsLevels records for the specified course
+	// err = tx.Where("career_id = ?", existingCareer.CareerID).Delete(&SkillsLevels{}).Error
+	// if err != nil {
+	// 	tx.Rollback()
+	// 	return err
+	// }
 
-	// Commit the delete operation
-	if err := tx.Commit().Error; err != nil {
-		return err
-	}
+	// // Commit the delete operation
+	// if err := tx.Commit().Error; err != nil {
+	// 	return err
+	// }
 
-	// Begin a new transaction for the update operation
-	tx = db.Begin()
+	// // Begin a new transaction for the update operation
+	// tx = db.Begin()
 
 	// Save the updated skill
 	err = tx.Save(updatedCareer).Error
@@ -307,6 +313,22 @@ func UpdateCareer(db *gorm.DB, updatedCareer *Career) (err error) {
 		}
 	}
 
+	// Clear existing associations within the transaction
+	err = tx.Model(existingCareer).Association("SkillsLevels").Clear()
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	// Update existing skillslevels with the new one (if provided)
+	if len(updatedCareer.SkillsLevels) > 0 {
+		err = tx.Model(existingCareer).Association("SkillsLevels").Append(updatedCareer.SkillsLevels)
+		if err != nil {
+			tx.Rollback()
+			return err
+		}
+	}
+
 	// Commit the transaction
 	err = tx.Commit().Error
 	if err != nil {
@@ -323,6 +345,63 @@ func DeleteCareerById(db *gorm.DB, id int) (err error) {
 		return err
 	}
 	return nil
+}
+
+func RecommendSkillsLevelsByCareer(db *gorm.DB, currentUserSkills *CareerForRecommendSkillsLevels) ([]ReturnRecommendSkillsLevels, error) {
+	currentSkills := currentUserSkills.UserSkillsLevels
+
+	var career Career
+	if err := db.Where("career_id = ?", currentUserSkills.CurrentCareerID).Preload("SkillsLevels.Skill").Preload("SkillsLevels.Courses.Organization").Preload("SkillsLevels").Preload("Groups").First(&career).Error; err != nil {
+		return nil, err
+	}
+
+	var skillLevelsIDs []int
+	for _, skillLevel := range career.SkillsLevels {
+		skillLevelsIDs = append(skillLevelsIDs, skillLevel.SkillsLevelsID)
+	}
+
+	fmt.Println(skillLevelsIDs)
+
+	// Find the differences between currentSkills and skillLevelsIDs
+	differences := diffArray(currentSkills, skillLevelsIDs)
+
+	// Fetch full SkillsLevels data for the differences
+	var returnSkillsLevels []SkillsLevelsInCareers
+	if len(differences) > 0 {
+		var skillsLevelsFromDB []SkillsLevelsInCareers
+		if err := db.Where("skills_levels_id IN (?)", differences).Preload("Skill").Preload("Courses.Organization").Find(&skillsLevelsFromDB).Error; err != nil {
+			return nil, err
+		}
+		returnSkillsLevels = skillsLevelsFromDB
+	} else {
+		returnSkillsLevels = make([]SkillsLevelsInCareers, 0)
+	}
+
+	var returnResult ReturnRecommendSkillsLevels
+	returnResult.CurrentCareer = career
+	returnResult.DifferenceSkillsLevels = returnSkillsLevels
+
+	// Return the full SkillsLevels data for the differences
+	return []ReturnRecommendSkillsLevels{returnResult}, nil
+}
+
+func diffArray(arr1, arr2 []int) []int {
+	diff := make([]int, 0)
+
+	// Create a map to store values of arr1 for quick lookup
+	arr1Map := make(map[int]bool)
+	for _, num := range arr1 {
+		arr1Map[num] = true
+	}
+
+	// Check each element of arr2 if it exists in arr1
+	for _, num := range arr2 {
+		if !arr1Map[num] {
+			diff = append(diff, num)
+		}
+	}
+
+	return diff
 }
 
 // Pagination struct

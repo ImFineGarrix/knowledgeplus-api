@@ -54,13 +54,13 @@ package models
 import "gorm.io/gorm"
 
 type SkillsLevels struct {
-	SkillsLevelsID int    `gorm:"column:skills_levels_id; primaryKey; autoIncrement;" json:"skills_levels_id"`
-	SkillID        *int   `gorm:"column:skill_id; not null;" json:"-"`
-	KnowledgeDesc  string `gorm:"column:knowledge_desc;" json:"knowledge_desc"`
-	AbilityDesc    string `gorm:"column:ability_desc;" json:"ability_desc"`
-	LevelID        int    `gorm:"column:level_id; not null" json:"levels_id"`
-	CourseID       *int   `gorm:"column:course_id; not null;" json:"-"`
-	CareerID       *int   `gorm:"column:career_id; not null;" json:"-"`
+	SkillsLevelsID int               `gorm:"column:skills_levels_id; primaryKey; autoIncrement;" json:"skills_levels_id"`
+	SkillID        *int              `gorm:"column:skill_id;" json:"skill_id"`
+	KnowledgeDesc  string            `gorm:"column:knowledge_desc;" json:"knowledge_desc"`
+	AbilityDesc    string            `gorm:"column:ability_desc;" json:"ability_desc"`
+	LevelID        int               `gorm:"column:level_id; not null" json:"level_id"`
+	Skill          SkillInCareers    `gorm:"foreignKey:SkillID;references:SkillID" json:"skill"`
+	Courses        []CourseInCareers `gorm:"many2many:courses_skills_levels;foreignKey:SkillsLevelsID;joinForeignKey:SkillsLevelsID;References:CourseID;joinReferences:CourseID" json:"courses"`
 }
 
 func (SkillsLevels) Tablename() string {
