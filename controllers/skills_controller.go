@@ -316,6 +316,20 @@ func (repository *SkillRepo) DeleteSkillById(c *gin.Context) {
 		return
 	}
 
+	// Delete associated records in courses_skills_levels table
+	err = repository.Db.Exec("DELETE FROM courses_skills_levels WHERE skills_levels_id IN (SELECT skills_levels_id FROM skills_levels WHERE skill_id = ?)", id).Error
+	if err != nil {
+		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err})
+		return
+	}
+
+	// Delete associated records in careers_skills_levels table
+	err = repository.Db.Exec("DELETE FROM careers_skills_levels WHERE skills_levels_id IN (SELECT skills_levels_id FROM skills_levels WHERE skill_id = ?)", id).Error
+	if err != nil {
+		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err})
+		return
+	}
+
 	// Delete associated records in skills_levels table
 	err = repository.Db.Exec("DELETE FROM skills_levels WHERE skill_id = ?", id).Error
 	if err != nil {
