@@ -19,7 +19,7 @@ func NewSkillsLevelsRepo() *SkillsLevelsRepo {
 	return &SkillsLevelsRepo{Db: db}
 }
 
-// GetAllSkillsLevels retrieves all SkillsLevels records from the database with pagination.
+// GetAllSkillsLevels retrieves all SkillsLevels records from the database with pagination and optional skill name search.
 func (repository *SkillsLevelsRepo) GetAllSkillsLevels(c *gin.Context) {
 	var (
 		skillsLevels []models.SkillsLevels
@@ -37,14 +37,16 @@ func (repository *SkillsLevelsRepo) GetAllSkillsLevels(c *gin.Context) {
 		limit = 10 // set a default limit
 	}
 
-	pagination, err = models.GetAllSkillsLevels(repository.Db, page, limit, &skillsLevels)
+	skillName := c.Query("search") // Retrieve skill name search parameter
+
+	pagination, err = models.GetAllSkillsLevels(repository.Db, page, limit, skillName, &skillsLevels) // Pass skillName to the function
 	if err != nil {
 		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 
 	c.JSON(http.StatusOK, gin.H{
-		"skillsLevels": skillsLevels,
-		"pagination":   pagination,
+		"skills_levels": skillsLevels,
+		"pagination":    pagination,
 	})
 }

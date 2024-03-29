@@ -17,21 +17,32 @@ func (SkillsLevels) TableName() string {
 	return "skills_levels"
 }
 
-// GetAllSkillsLevels retrieves all SkillsLevels records from the database with pagination.
-func GetAllSkillsLevels(db *gorm.DB, page, limit int, skillsLevels *[]SkillsLevels) (pagination Pagination, err error) {
+// GetAllSkillsLevels retrieves all SkillsLevels records from the database with pagination and optional skill name search.
+func GetAllSkillsLevels(db *gorm.DB, page, limit int, skillName string, skillsLevels *[]SkillsLevels) (pagination Pagination, err error) {
 	offset := (page - 1) * limit
 
 	// Preload the related Skill and Careers
-	err = db.Preload("Skill").Preload("Careers").Preload("Courses").Model(&SkillsLevels{}).
-		Offset(offset).Limit(limit).
-		Find(skillsLevels).Error
+	query := db.Preload("Skill").Preload("Careers").Preload("Courses").Model(&SkillsLevels{}).
+		Offset(offset).Limit(limit)
+
+	if skillName != "" {
+		query = query.Joins("JOIN skills ON skills_levels.skill_id = skills.skill_id").
+			Where("skills.name LIKE ?", "%"+skillName+"%")
+	}
+
+	err = query.Find(skillsLevels).Error
 	if err != nil {
 		return Pagination{}, err
 	}
 
 	// Calculate total pages
 	var totalCount int64
-	if err := db.Model(&SkillsLevels{}).Count(&totalCount).Error; err != nil {
+	totalCountQuery := db.Model(&SkillsLevels{})
+	if skillName != "" {
+		totalCountQuery = totalCountQuery.Joins("JOIN skills ON skills_levels.skill_id = skills.skill_id").
+			Where("skills.name LIKE ?", "%"+skillName+"%")
+	}
+	if err := totalCountQuery.Count(&totalCount).Error; err != nil {
 		return Pagination{}, err
 	}
 
