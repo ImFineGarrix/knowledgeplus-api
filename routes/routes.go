@@ -19,6 +19,7 @@ func SetupRoutes(defaultPath *gin.RouterGroup) {
 	GroupRepo := controllers.NewGroupRepo()
 	CareerRepo := controllers.NewCareerRepo()
 	SkillRepo := controllers.NewSkillRepo()
+	SkillsLevelsRepo := controllers.NewSkillsLevelsRepo()
 	LevelsRepo := controllers.NewLevelsRepo()
 	CourseRepo := controllers.NewCourseRepo()
 	OrganizationRepo := controllers.NewOrganizationsRepo()
@@ -36,6 +37,9 @@ func SetupRoutes(defaultPath *gin.RouterGroup) {
 	defaultPath.GET("/skills-by-course/:course_id", SkillRepo.GetSkillsByCourseId)
 	defaultPath.GET("/skills-by-career/:career_id", SkillRepo.GetSkillsByCareerId)
 	defaultPath.GET("/skills/:id", SkillRepo.GetSkillById)
+
+	/** skills **/
+	defaultPath.GET("/skills-levels", SkillsLevelsRepo.GetAllSkillsLevels)
 
 	/** levels **/
 	defaultPath.GET("/levels", LevelsRepo.GetLevels)
@@ -61,7 +65,7 @@ func SetupRoutes(defaultPath *gin.RouterGroup) {
 	defaultPath.GET("/courses-by-career/:career_id", CourseRepo.GetCoursesByCareerId)
 
 	/** Recommend Skills **/
-	defaultPath.POST("/recommended_skills", CareerRepo.RecommendSkillsLevelsByCareer)
+	defaultPath.POST("/recommended-skills", CareerRepo.RecommendSkillsLevelsByCareer)
 
 	//** all backoffice!! **//
 
