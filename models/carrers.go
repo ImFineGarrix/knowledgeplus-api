@@ -1,8 +1,6 @@
 package models
 
 import (
-	"fmt"
-
 	"gorm.io/gorm"
 )
 
@@ -66,6 +64,11 @@ type CareerForRecommendSkillsLevels struct {
 
 type ReturnRecommendSkillsLevels struct {
 	DifferenceSkillsLevels []SkillsLevelsInCareers `json:"difference_skills_levels"`
+}
+
+// Error implements error.
+func (ReturnRecommendSkillsLevels) Error() string {
+	panic("unimplemented")
 }
 
 // type UpdateCareerModels struct {
@@ -349,20 +352,18 @@ func DeleteCareerById(db *gorm.DB, id int) (err error) {
 	return nil
 }
 
-func RecommendSkillsLevelsByCareer(db *gorm.DB, currentUserSkills *CareerForRecommendSkillsLevels) ([]ReturnRecommendSkillsLevels, error) {
+func RecommendSkillsLevelsByCareer(db *gorm.DB, currentUserSkills *CareerForRecommendSkillsLevels) (Error error) {
 	currentSkills := currentUserSkills.UserSkillsLevels
 
 	var career Career
 	if err := db.Where("career_id = ?", currentUserSkills.CurrentCareerID).Preload("SkillsLevels.Skill").Preload("SkillsLevels.Courses.Organization").Preload("SkillsLevels").Preload("Groups").First(&career).Error; err != nil {
-		return nil, err
+		return nil
 	}
 
 	var skillLevelsIDs []int
 	for _, skillLevel := range career.SkillsLevels {
 		skillLevelsIDs = append(skillLevelsIDs, skillLevel.SkillsLevelsID)
 	}
-
-	fmt.Println(skillLevelsIDs)
 
 	// Find the differences between currentSkills and skillLevelsIDs
 	differences := diffArray(currentSkills, skillLevelsIDs)
@@ -372,7 +373,7 @@ func RecommendSkillsLevelsByCareer(db *gorm.DB, currentUserSkills *CareerForReco
 	if len(differences) > 0 {
 		var skillsLevelsFromDB []SkillsLevelsInCareers
 		if err := db.Where("skills_levels_id IN (?)", differences).Preload("Skill").Preload("Courses.Organization").Find(&skillsLevelsFromDB).Error; err != nil {
-			return nil, err
+			return nil
 		}
 		returnSkillsLevels = skillsLevelsFromDB
 	} else {
@@ -383,7 +384,7 @@ func RecommendSkillsLevelsByCareer(db *gorm.DB, currentUserSkills *CareerForReco
 	returnResult.DifferenceSkillsLevels = returnSkillsLevels
 
 	// Return the full SkillsLevels data for the differences
-	return []ReturnRecommendSkillsLevels{returnResult}, nil
+	return returnResult
 }
 
 func diffArray(arr1, arr2 []int) []int {

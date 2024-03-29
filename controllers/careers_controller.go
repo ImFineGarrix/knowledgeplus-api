@@ -345,7 +345,7 @@ func (repository *CareerRepo) RecommendSkillsLevelsByCareer(c *gin.Context) {
 	}
 
 	// Call the function to get the differences
-	differences, err := models.RecommendSkillsLevelsByCareer(repository.Db, &Career)
+	differences := models.RecommendSkillsLevelsByCareer(repository.Db, &Career)
 	if err != nil {
 		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
