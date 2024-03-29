@@ -2,13 +2,14 @@ package routes
 
 import (
 	"knowledgeplus/go-api/controllers"
+	"knowledgeplus/go-api/middleware"
 
 	"github.com/gin-gonic/gin"
 )
 
 func SetupRoutes(defaultPath *gin.RouterGroup) {
 	// Initialize middleware
-	// authMiddleware := middleware.AuthMiddleware()
+	authMiddleware := middleware.AuthMiddleware()
 
 	defaultPath.POST("/backoffice/auth/login", controllers.NewAuthRepo().LoginHandler)
 	// defaultPath.Use(authMiddleware).POST("/auth/register", controllers.NewAuthRepo().CreateUserHandler)
@@ -59,9 +60,12 @@ func SetupRoutes(defaultPath *gin.RouterGroup) {
 	defaultPath.GET("/courses-by-skill/:skill_id", CourseRepo.GetCoursesBySkillId)
 	defaultPath.GET("/courses-by-career/:career_id", CourseRepo.GetCoursesByCareerId)
 
+	/** Recommend Skills **/
+	defaultPath.POST("/recommended_skills", CareerRepo.RecommendSkillsLevelsByCareer)
+
 	//** all backoffice!! **//
 
-	// defaultPath.Use(authMiddleware)
+	defaultPath.Use(authMiddleware)
 
 	/** careers models */
 	defaultPath.GET("/backoffice/careers", CareerRepo.GetCareers)
@@ -115,8 +119,5 @@ func SetupRoutes(defaultPath *gin.RouterGroup) {
 	defaultPath.GET("/backoffice/admins/:id", UserRepo.GetUserById)
 	defaultPath.PUT("/backoffice/admins/:id", UserRepo.UpdateUser)
 	defaultPath.DELETE("/backoffice/admins/:id", UserRepo.DeleteUserById)
-
-	/** Recommend Skills **/
-	defaultPath.POST("/backoffice/recommend_skills", CareerRepo.RecommendSkillsLevelsByCareer)
 
 }
