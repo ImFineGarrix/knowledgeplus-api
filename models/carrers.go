@@ -65,7 +65,6 @@ type CareerForRecommendSkillsLevels struct {
 }
 
 type ReturnRecommendSkillsLevels struct {
-	CurrentCareer          Career                  `json:"current_career"`
 	DifferenceSkillsLevels []SkillsLevelsInCareers `json:"difference_skills_levels"`
 }
 
@@ -378,7 +377,6 @@ func RecommendSkillsLevelsByCareer(db *gorm.DB, currentUserSkills *CareerForReco
 	}
 
 	var returnResult ReturnRecommendSkillsLevels
-	returnResult.CurrentCareer = career
 	returnResult.DifferenceSkillsLevels = returnSkillsLevels
 
 	// Return the full SkillsLevels data for the differences
