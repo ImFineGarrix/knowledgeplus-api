@@ -27,7 +27,7 @@ func (Section) TableName() string {
 type UpdateSectionModels struct {
 	SectionID int    `gorm:"column:section_id; primaryKey;autoIncrement" json:"section_id"`
 	Name      string `gorm:"column:name; not null; type:VARCHAR(255);" json:"name" binding:"max=255"`
-	ImageUrl  string `gorm:"column:image_url; default:NULL; type:LONGTEXT;" json:"image_url" binding:"required,max=5000"`
+	ImageUrl  string `gorm:"column:image_url; default:NULL; type:LONGTEXT;" json:"image_url" binding:"required,max=2000"`
 }
 
 // GetSections retrieves all section records from the database.

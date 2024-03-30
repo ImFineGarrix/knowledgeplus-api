@@ -8,7 +8,7 @@ type Skill struct {
 	SkillID     *int   `gorm:"column:skill_id;primaryKey" json:"skill_id"`
 	Name        string `gorm:"column:name;not null; type:VARCHAR(255);" json:"name" binding:"required,max=255"`
 	Description string `gorm:"column:description; default:NULL; type:LONGTEXT;" json:"description" binding:"max=1500"`
-	ImageUrl    string `gorm:"column:image_url; default:NULL; type:LONGTEXT;" json:"image_url" binding:"required,max=5000"`
+	ImageUrl    string `gorm:"column:image_url; default:NULL; type:LONGTEXT;" json:"image_url" binding:"required,max=2000"`
 	Type        string `gorm:"column:type; default:NULL; type:ENUM('SOFT','HARD');" json:"type" binding:"required,max=100"`
 	// Careers     []CareerInSkills `gorm:"many2many:careers_skills;foreignKey:SkillID;joinForeignKey:SkillID;References:CareerID;joinReferences:CareerID" json:"careers"`
 	SkillsLevels []SkillsLevelsInSkills `gorm:"foreignKey:SkillID; References:SkillID;" json:"skills_levels"`

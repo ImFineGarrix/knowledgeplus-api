@@ -14,7 +14,7 @@ type Organizations struct {
 type UpdateOrganizationModels struct {
 	Name        string `gorm:"column:name; type:VARCHAR(255);" json:"name" binding:"max=255"`
 	Description string `gorm:"column:description; default:NULL; type:LONGTEXT;" json:"description" binding:"max=1500"`
-	ImageUrl    string `gorm:"column:image_url; default:NULL; type:LONGTEXT;" json:"image_url" binding:"max=5000"`
+	ImageUrl    string `gorm:"column:image_url; default:NULL; type:LONGTEXT;" json:"image_url" binding:"max=2000"`
 }
 
 func (Organizations) TableName() string {
