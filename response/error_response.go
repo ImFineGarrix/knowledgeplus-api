@@ -1,8 +1,6 @@
 package response
 
 import (
-	"fmt"
-
 	"github.com/go-playground/validator/v10"
 )
 
@@ -14,7 +12,6 @@ type ErrorMsg struct {
 
 // GetErrorMsg returns the error message based on the validation tag.
 func GetErrorMsg(fe validator.FieldError) string {
-	fmt.Println(fe.Field())
 	switch fe.Tag() {
 	case "required":
 		return fe.Field() + " is required"

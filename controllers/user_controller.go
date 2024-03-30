@@ -70,7 +70,7 @@ func (repository *UserRepo) CreateUser(c *gin.Context) {
 					Message: response.GetErrorMsg(fe),
 				}
 			}
-			c.JSON(http.StatusCreated, out)
+			c.JSON(http.StatusBadRequest, out)
 		}
 		return
 	}
@@ -139,7 +139,7 @@ func (repository *UserRepo) UpdateUser(c *gin.Context) {
 					Message: response.GetErrorMsg(fe),
 				}
 			}
-			c.JSON(http.StatusCreated, out)
+			c.JSON(http.StatusBadRequest, out)
 		}
 		return
 	}
