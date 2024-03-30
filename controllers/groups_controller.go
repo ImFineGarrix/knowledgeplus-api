@@ -149,7 +149,7 @@ func (repository *GroupRepo) UpdateGroup(c *gin.Context) {
 
 	// Check if the name already exists in the database
 	var existingGroup models.Group
-	if err := repository.Db.Where("name = ? AND group_id != ?", updatedGroup.Name, updatedGroup.GroupID).First(&existingGroup).Error; err == nil {
+	if err := repository.Db.Where("name = ? AND group_id != ?", updatedGroup.Name, id).First(&existingGroup).Error; err == nil {
 
 		out := response.ErrorMsg{
 			Code:    http.StatusBadRequest,

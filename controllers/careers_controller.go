@@ -249,7 +249,7 @@ func (repository *CareerRepo) UpdateCareer(c *gin.Context) {
 
 	// Check if the name already exists in the database
 	var existingCareer models.Career
-	if err := repository.Db.Where("name = ? AND career_id != ?", updatedCareer.Name, updatedCareer.CareerID).First(&existingCareer).Error; err == nil {
+	if err := repository.Db.Where("name = ? AND career_id != ?", updatedCareer.Name, id).First(&existingCareer).Error; err == nil {
 		out := response.ErrorMsg{
 			Code:    http.StatusBadRequest,
 			Field:   "Name",

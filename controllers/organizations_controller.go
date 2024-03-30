@@ -132,7 +132,7 @@ func (repository *OrganizationsRepo) UpdateOrganization(c *gin.Context) {
 
 	// Check if the name already exists in the database
 	var existingOrganizations models.Organizations
-	if err := repository.Db.Where("name = ? AND organization_id != ?", updatedOrganization.Name, existingOrganization.OrganizationID).First(&existingOrganizations).Error; err == nil {
+	if err := repository.Db.Where("name = ? AND organization_id != ?", updatedOrganization.Name, id).First(&existingOrganizations).Error; err == nil {
 		out := response.ErrorMsg{
 			Code:    http.StatusBadRequest,
 			Field:   "Name",

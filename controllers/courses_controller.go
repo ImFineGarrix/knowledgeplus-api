@@ -253,7 +253,7 @@ func (repository *CourseRepo) UpdateCourse(c *gin.Context) {
 
 	// Check if the name already exists in the database
 	var existingCourse models.Course
-	if err := repository.Db.Where("name = ? AND course_id != ?", updatedCourse.Name, updatedCourse.CourseID).First(&existingCourse).Error; err == nil {
+	if err := repository.Db.Where("name = ? AND course_id != ?", updatedCourse.Name, id).First(&existingCourse).Error; err == nil {
 		out := response.ErrorMsg{
 			Code:    http.StatusBadRequest,
 			Field:   "Name",
