@@ -18,7 +18,7 @@ type Skill struct {
 type UpdateSkillModels struct {
 	Name         string         `gorm:"column:name; type:VARCHAR(255);" json:"name" binding:"max=255"`
 	Description  string         `gorm:"column:description; default:NULL; type:LONGTEXT;" json:"description" binding:"max=1500"`
-	ImageUrl     string         `gorm:"column:image_url; default:NULL; type:LONGTEXT;" json:"image_url" binding:"max=5000"`
+	ImageUrl     string         `gorm:"column:image_url; default:NULL; type:LONGTEXT;" json:"image_url" binding:"max=2000"`
 	Type         string         `gorm:"column:type; default:NULL; type:ENUM('SOFT','HARD');" json:"type" binding:"max=100"`
 	SkillsLevels []SkillsLevels `gorm:"foreignKey:SkillID" json:"skills_levels"`
 	// LevelID     int    `json:"level_id" binding:"required"`

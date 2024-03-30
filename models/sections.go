@@ -7,7 +7,7 @@ import (
 type Section struct {
 	SectionID int      `gorm:"column:section_id; primaryKey;autoIncrement" json:"section_id"`
 	Name      string   `gorm:"column:name; not null; type:VARCHAR(255);" json:"name" binding:"required,max=255"`
-	ImageUrl  string   `gorm:"column:image_url; default:NULL; type:LONGTEXT;" json:"image_url" binding:"required,max=5000"`
+	ImageUrl  string   `gorm:"column:image_url; default:NULL; type:LONGTEXT;" json:"image_url" binding:"required,max=2000"`
 	Groups    []Groups `gorm:"many2many:sections_groups;foreignKey:SectionID;joinForeignKey:SectionID;References:GroupID;joinReferences:GroupID" json:"-"`
 }
 

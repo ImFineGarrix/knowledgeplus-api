@@ -35,7 +35,7 @@ type OrganizationInCourses struct {
 	OrganizationID int    `gorm:"column:organization_id; primaryKey;" json:"-"`
 	Name           string `gorm:"column:name; not null; type:VARCHAR(255)" json:"name" binding:"max=255"`
 	Description    string `gorm:"column:description; default:NULL; type:LONGTEXT;" json:"description" binding:"max=1500"`
-	ImageUrl       string `gorm:"column:image_url; default:NULL; type:LONGTEXT;" json:"image_url" binding:"max=5000"`
+	ImageUrl       string `gorm:"column:image_url; default:NULL; type:LONGTEXT;" json:"image_url" binding:"max=2000"`
 }
 
 type SkillsLevelsInCourses struct {
