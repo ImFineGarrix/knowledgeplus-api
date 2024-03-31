@@ -106,20 +106,30 @@ func (OrganizationInCareer) TableName() string {
 
 // GetCareers retrieves all Career records from the database with pagination.
 func GetCareers(db *gorm.DB, page, limit int) (careers []Career, pagination Pagination, err error) {
+	// Calculate offset
 	offset := (page - 1) * limit
-	err = db.Preload("SkillsLevels.Skill").Preload("SkillsLevels.Courses.Organization").Preload("Groups").
-		Offset(offset).Limit(limit).
+
+	// Define only the necessary fields to select
+	fields := "career_id, name, description"
+
+	// Execute the query
+	err = db.
+		Model(&Career{}).
+		Select(fields).
+		Offset(offset).
+		Limit(limit).
 		Find(&careers).Error
 	if err != nil {
 		return nil, Pagination{}, err
 	}
 
-	// Calculate total pages
+	// Calculate total count
 	var totalCount int64
 	if err := db.Model(&Career{}).Count(&totalCount).Error; err != nil {
 		return nil, Pagination{}, err
 	}
 
+	// Calculate total pages
 	totalPages := int(totalCount)
 
 	pagination = Pagination{
