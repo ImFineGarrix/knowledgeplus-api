@@ -220,7 +220,7 @@ func (repository *CourseRepo) UpdateCourse(c *gin.Context) {
 	var updatedCourse models.Course
 
 	// Check if the course record exists
-	err := models.GetCourseById(repository.Db, &updatedCourse, id)
+	err := repository.Db.First(&updatedCourse, id).Error
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			c.AbortWithStatusJSON(http.StatusNotFound, gin.H{"error": "Record not found!"})

@@ -68,7 +68,33 @@ type CareerInCourses struct {
 	// SkillsLevels []SkillsLevelsInCareers `gorm:"foreignKey:CareerID; References:CareerID;" json:"-"`
 }
 
+type UpdateCourseDTO struct {
+	CourseID        int                           `gorm:"column:course_id;primaryKey" json:"course_id"`
+	Name            string                        `gorm:"column:name;not null; type:VARCHAR(255);" json:"name" binding:"required,max=255"`
+	Description     string                        `gorm:"column:description; default:NULL; type:LONGTEXT;" json:"description" binding:"max=1500"`
+	LearnHours      string                        `gorm:"column:learn_hours; default:NULL; type:VARCHAR(45);" json:"learn_hours"`
+	AcademicYear    string                        `gorm:"column:academic_year; default:NULL; type:VARCHAR(45);" json:"academic_year"`
+	CourseLink      string                        `gorm:"column:course_link; default:NULL; type:LONGTEXT;" json:"course_link"`
+	CourseType      string                        `gorm:"column:course_type; default:NULL; type:VARCHAR(45);" json:"course_type"`
+	LearningOutcome string                        `gorm:"column:learinig_outcome; default:NULL; type:LONGTEXT;" json:"learning_outcome"`
+	Organization    OrganizationInCourses         `gorm:"foreignKey:OrganizationID;references:OrganizationID" json:"organization"`
+	OrganizationID  int                           `gorm:"column:organization_id" json:"organization_id"`
+	SkillsLevels    []SkillsLevelsInCoursesUpdate `gorm:"many2many:courses_skills_levels;foreignKey:CourseID;joinForeignKey:CourseID;References:SkillsLevelsID;joinReferences:SkillsLevelsID" json:"skills_levels"`
+}
+
+type SkillsLevelsInCoursesUpdate struct {
+	SkillsLevelsID int    `gorm:"column:skills_levels_id; primaryKey; autoIncrement;" json:"skills_levels_id"`
+	SkillID        *int   `gorm:"column:skill_id;" json:"skill_id"`
+	KnowledgeDesc  string `gorm:"column:knowledge_desc;" json:"knowledge_desc"`
+	AbilityDesc    string `gorm:"column:ability_desc;" json:"ability_desc"`
+	LevelID        int    `gorm:"column:level_id; not null" json:"level_id"`
+}
+
 func (Course) TableName() string {
+	return "courses"
+}
+
+func (UpdateCourseDTO) TableName() string {
 	return "courses"
 }
 
@@ -81,6 +107,10 @@ func (OrganizationInCourses) TableName() string {
 }
 
 func (SkillsLevelsInCourses) TableName() string {
+	return "skills_levels"
+}
+
+func (SkillsLevelsInCoursesUpdate) TableName() string {
 	return "skills_levels"
 }
 
@@ -248,12 +278,6 @@ func GetCourseById(db *gorm.DB, course *Course, id int) (err error) {
 func UpdateCourse(db *gorm.DB, updatedCourse *Course) (err error) {
 	// Begin a transaction
 	tx := db.Begin()
-	// defer func() {
-	// 	if r := recover(); r != nil {
-	// 		tx.Rollback()
-	// 	}
-	// }()
-
 	// Check if the course record exists
 	existingCourse := &Course{}
 	err = tx.Preload("Organization").Preload("SkillsLevels.Skill").Preload("SkillsLevels.Careers").Preload("SkillsLevels").First(existingCourse, "course_id = ?", updatedCourse.CourseID).Error
@@ -261,21 +285,6 @@ func UpdateCourse(db *gorm.DB, updatedCourse *Course) (err error) {
 		tx.Rollback()
 		return err
 	}
-
-	// // Delete all existing SkillsLevels records for the specified course
-	// err = tx.Where("course_id = ?", existingCourse.CourseID).Delete(&SkillsLevels{}).Error
-	// if err != nil {
-	// 	tx.Rollback()
-	// 	return err
-	// }
-
-	// // Commit the delete operation
-	// if err := tx.Commit().Error; err != nil {
-	// 	return err
-	// }
-
-	// // Begin a new transaction for the update operation
-	// tx = db.Begin()
 
 	// Save the updated course
 	err = tx.Save(updatedCourse).Error
@@ -290,6 +299,13 @@ func UpdateCourse(db *gorm.DB, updatedCourse *Course) (err error) {
 		tx.Rollback()
 		return err
 	}
+
+	// // Clear existing associations within the transaction
+	// err = tx.Model(existingCourse).Association("SkillsLevels.Careers").Clear()
+	// if err != nil {
+	// 	tx.Rollback()
+	// 	return err
+	// }
 
 	// Update existing skillslevels with the new one (if provided)
 	if len(updatedCourse.SkillsLevels) > 0 {

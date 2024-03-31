@@ -99,11 +99,10 @@ func (repository *OrganizationsRepo) UpdateOrganization(c *gin.Context) {
 	var existingOrganization models.Organizations
 	var updatedOrganization models.UpdateOrganizationModels
 	var currentOrganization models.UpdateOrganizationModels
-
-	err := models.GetOrganizationById(repository.Db, &existingOrganization, id)
+	err := repository.Db.First(&existingOrganization, id).Error
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			c.AbortWithStatus(http.StatusNotFound)
+			c.AbortWithStatusJSON(http.StatusNotFound, gin.H{"error": "Record not found!"})
 			return
 		}
 

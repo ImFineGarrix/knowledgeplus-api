@@ -215,8 +215,7 @@ func (repository *CareerRepo) UpdateCareer(c *gin.Context) {
 	id, _ := strconv.Atoi(c.Param("id"))
 	var updatedCareer models.Career
 
-	// Check if the career record exists
-	err := models.GetCareerById(repository.Db, &updatedCareer, id)
+	err := repository.Db.First(&updatedCareer, id).Error
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			c.AbortWithStatusJSON(http.StatusNotFound, gin.H{"error": "Record not found!"})

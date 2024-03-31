@@ -234,7 +234,7 @@ func (repository *SkillRepo) UpdateSkill(c *gin.Context) {
 	var updatedSkill models.Skill
 
 	// Check if the skill record exists
-	err := models.GetSkillById(repository.Db, &updatedSkill, id)
+	err := repository.Db.First(&updatedSkill, id).Error
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			c.AbortWithStatusJSON(http.StatusNotFound, gin.H{"error": "Record not found!"})
