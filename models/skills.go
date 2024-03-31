@@ -16,11 +16,11 @@ type Skill struct {
 }
 
 type UpdateSkillModels struct {
-	Name         string         `gorm:"column:name; type:VARCHAR(255);" json:"name" binding:"max=255"`
-	Description  string         `gorm:"column:description; default:NULL; type:LONGTEXT;" json:"description" binding:"max=1500"`
-	ImageUrl     string         `gorm:"column:image_url; default:NULL; type:LONGTEXT;" json:"image_url" binding:"max=2000"`
-	Type         string         `gorm:"column:type; default:NULL; type:ENUM('SOFT','HARD');" json:"type" binding:"max=100"`
-	SkillsLevels []SkillsLevels `gorm:"foreignKey:SkillID" json:"skills_levels"`
+	Name         string                 `gorm:"column:name; type:VARCHAR(255);" json:"name" binding:"max=255"`
+	Description  string                 `gorm:"column:description; default:NULL; type:LONGTEXT;" json:"description" binding:"max=1500"`
+	ImageUrl     string                 `gorm:"column:image_url; default:NULL; type:LONGTEXT;" json:"image_url" binding:"max=2000"`
+	Type         string                 `gorm:"column:type; default:NULL; type:ENUM('SOFT','HARD');" json:"type" binding:"max=100"`
+	SkillsLevels []SkillsLevelsInSkills `gorm:"foreignKey:SkillID" json:"skills_levels"`
 	// LevelID     int    `json:"level_id" binding:"required"`
 }
 
@@ -199,7 +199,56 @@ func CreateSkill(db *gorm.DB, skill *Skill) (err error) {
 	return nil
 }
 
-// UpdateSkill updates an existing Skill record in the database.
+// // UpdateSkill updates an existing Skill record in the database.
+// func UpdateSkill(db *gorm.DB, updatedSkill *Skill) (err error) {
+// 	existingSkill := &Skill{}
+
+// 	// Begin a transaction
+// 	tx := db.Begin()
+// 	defer func() {
+// 		if r := recover(); r != nil {
+// 			tx.Rollback()
+// 		}
+// 	}()
+
+// 	// Check if the skill record exists
+// 	err = tx.Preload("SkillsLevels").First(existingSkill, "skill_id = ?", updatedSkill.SkillID).Error
+// 	if err != nil {
+// 		tx.Rollback()
+// 		return err
+// 	}
+
+// 	// // Delete all existing SkillsLevels records for the specified skill
+// 	// err = tx.Where("skill_id = ?", updatedSkill.SkillID).Delete(&SkillsLevels{}).Error
+// 	// if err != nil {
+// 	// 	tx.Rollback()
+// 	// 	return err
+// 	// }
+
+// 	// // Commit the delete operation
+// 	// if err := tx.Commit().Error; err != nil {
+// 	// 	return err
+// 	// }
+
+// 	// // Begin a new transaction for the update operation
+// 	// tx = db.Begin()
+
+// 	// Save the updated skill
+// 	err = tx.Save(updatedSkill).Error
+// 	if err != nil {
+// 		tx.Rollback()
+// 		return err
+// 	}
+
+// 	// Commit the transaction for the update operation
+// 	if err := tx.Commit().Error; err != nil {
+// 		return err
+// 	}
+
+// 	return nil
+// }
+
+// UpdateSkill updates an existing Skill record in the database along with its associated skills levels.
 func UpdateSkill(db *gorm.DB, updatedSkill *Skill) (err error) {
 	existingSkill := &Skill{}
 
@@ -212,35 +261,58 @@ func UpdateSkill(db *gorm.DB, updatedSkill *Skill) (err error) {
 	}()
 
 	// Check if the skill record exists
-	err = tx.Preload("SkillsLevels").First(existingSkill, "skill_id = ?", updatedSkill.SkillID).Error
-	if err != nil {
+	if err := tx.Preload("SkillsLevels").First(existingSkill, "skill_id = ?", updatedSkill.SkillID).Error; err != nil {
 		tx.Rollback()
 		return err
 	}
 
-	// Delete all existing SkillsLevels records for the specified skill
-	err = tx.Where("skill_id = ?", existingSkill.SkillID).Delete(&SkillsLevels{}).Error
-	if err != nil {
-		tx.Rollback()
-		return err
-	}
-
-	// Commit the delete operation
-	if err := tx.Commit().Error; err != nil {
-		return err
-	}
-
-	// Begin a new transaction for the update operation
-	tx = db.Begin()
+	// Update the skill's fields
+	existingSkill.Name = updatedSkill.Name
+	existingSkill.Description = updatedSkill.Description
+	existingSkill.ImageUrl = updatedSkill.ImageUrl
+	existingSkill.Type = updatedSkill.Type
 
 	// Save the updated skill
-	err = tx.Save(updatedSkill).Error
-	if err != nil {
+	if err := tx.Save(existingSkill).Error; err != nil {
 		tx.Rollback()
 		return err
 	}
 
-	// Commit the transaction for the update operation
+	// Delete existing skills levels not present in the updated data
+	for _, existingSkillsLevel := range existingSkill.SkillsLevels {
+		var found bool
+		for _, updatedSkillsLevel := range updatedSkill.SkillsLevels {
+			if existingSkillsLevel.SkillsLevelsID == updatedSkillsLevel.SkillsLevelsID {
+				found = true
+				break
+			}
+		}
+		if !found {
+			if err := tx.Delete(&existingSkillsLevel).Error; err != nil {
+				tx.Rollback()
+				return err
+			}
+		}
+	}
+
+	// Save or update the updated skills levels
+	for _, updatedSkillsLevel := range updatedSkill.SkillsLevels {
+		if updatedSkillsLevel.SkillsLevelsID != 0 { // Check if SkillsLevelsID is not zero
+			// Update existing skills level
+			if err := tx.Save(&updatedSkillsLevel).Error; err != nil {
+				tx.Rollback()
+				return err
+			}
+		} else {
+			// Create new skills level
+			if err := tx.Create(&updatedSkillsLevel).Error; err != nil {
+				tx.Rollback()
+				return err
+			}
+		}
+	}
+
+	// Commit the transaction
 	if err := tx.Commit().Error; err != nil {
 		return err
 	}
