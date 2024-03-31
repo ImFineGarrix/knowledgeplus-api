@@ -137,7 +137,8 @@ func GetCareersByCourseId(db *gorm.DB, courseID, page, limit int) (careers []Car
 	err = db.Preload("SkillsLevels.Skill").Preload("SkillsLevels.Courses.Organization").Preload("Groups").
 		Joins("JOIN careers_skills_levels ON careers.career_id = careers_skills_levels.career_id").
 		Joins("JOIN skills_levels ON careers_skills_levels.skills_levels_id = skills_levels.skills_levels_id").
-		Where("skills_levels.course_id = ?", courseID).
+		Joins("JOIN courses_skills_levels ON skills_levels.skills_levels_id = courses_skills_levels.skills_levels_id").
+		Where("courses_skills_levels.course_id = ?", courseID).
 		Group("careers.career_id").
 		Distinct().
 		Offset(offset).Limit(limit).
@@ -151,7 +152,8 @@ func GetCareersByCourseId(db *gorm.DB, courseID, page, limit int) (careers []Car
 	if err := db.Model(&Career{}).
 		Joins("JOIN careers_skills_levels ON careers.career_id = careers_skills_levels.career_id").
 		Joins("JOIN skills_levels ON careers_skills_levels.skills_levels_id = skills_levels.skills_levels_id").
-		Where("skills_levels.course_id = ?", courseID).
+		Joins("JOIN courses_skills_levels ON skills_levels.skills_levels_id = courses_skills_levels.skills_levels_id").
+		Where("courses_skills_levels.course_id = ?", courseID).
 		Group("careers.career_id").
 		Distinct().
 		Count(&totalCount).Error; err != nil {
