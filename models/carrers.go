@@ -1,6 +1,8 @@
 package models
 
 import (
+	"fmt"
+
 	"gorm.io/gorm"
 )
 
@@ -355,12 +357,66 @@ func DeleteCareerById(db *gorm.DB, id int) (err error) {
 	return nil
 }
 
-func RecommendSkillsLevelsByCareer(db *gorm.DB, currentUserSkills *CareerForRecommendSkillsLevels) (Error error) {
+// func RecommendSkillsLevelsByCareer(db *gorm.DB, currentUserSkills *CareerForRecommendSkillsLevels) (Error error) {
+// 	currentSkills := currentUserSkills.UserSkillsLevels
+
+// 	var career Career
+// 	if err := db.Where("career_id = ?", currentUserSkills.CurrentCareerID).Preload("SkillsLevels.Skill").Preload("SkillsLevels.Courses.Organization").Preload("SkillsLevels").Preload("Groups").First(&career).Error; err != nil {
+// 		return nil
+// 	}
+
+// 	var skillLevelsIDs []int
+// 	for _, skillLevel := range career.SkillsLevels {
+// 		skillLevelsIDs = append(skillLevelsIDs, skillLevel.SkillsLevelsID)
+// 	}
+
+// 	// Find the differences between currentSkills and skillLevelsIDs
+// 	differences := diffArray(currentSkills, skillLevelsIDs)
+
+// 	// Fetch full SkillsLevels data for the differences
+// 	var returnSkillsLevels []SkillsLevelsInCareers
+// 	if len(differences) > 0 {
+// 		var skillsLevelsFromDB []SkillsLevelsInCareers
+// 		if err := db.Where("skills_levels_id IN (?)", differences).Preload("Skill").Preload("Courses.Organization").Find(&skillsLevelsFromDB).Error; err != nil {
+// 			return nil
+// 		}
+// 		returnSkillsLevels = skillsLevelsFromDB
+// 	} else {
+// 		returnSkillsLevels = make([]SkillsLevelsInCareers, 0)
+// 	}
+
+// 	var returnResult ReturnRecommendSkillsLevels
+// 	returnResult.DifferenceSkillsLevels = returnSkillsLevels
+
+// 	// Return the full SkillsLevels data for the differences
+// 	return returnResult
+// }
+
+// func diffArray(arr1, arr2 []int) []int {
+// 	diff := make([]int, 0)
+
+// 	// Create a map to store values of arr1 for quick lookup
+// 	arr1Map := make(map[int]bool)
+// 	for _, num := range arr1 {
+// 		arr1Map[num] = true
+// 	}
+
+// 	// Check each element of arr2 if it exists in arr1
+// 	for _, num := range arr2 {
+// 		if !arr1Map[num] {
+// 			diff = append(diff, num)
+// 		}
+// 	}
+
+// 	return diff
+// }
+
+func RecommendSkillsLevelsByCareer(db *gorm.DB, currentUserSkills *CareerForRecommendSkillsLevels) (result ReturnRecommendSkillsLevels, ReturnError error) {
 	currentSkills := currentUserSkills.UserSkillsLevels
 
 	var career Career
 	if err := db.Where("career_id = ?", currentUserSkills.CurrentCareerID).Preload("SkillsLevels.Skill").Preload("SkillsLevels.Courses.Organization").Preload("SkillsLevels").Preload("Groups").First(&career).Error; err != nil {
-		return nil
+		return ReturnRecommendSkillsLevels{}, err
 	}
 
 	var skillLevelsIDs []int
@@ -372,22 +428,35 @@ func RecommendSkillsLevelsByCareer(db *gorm.DB, currentUserSkills *CareerForReco
 	differences := diffArray(currentSkills, skillLevelsIDs)
 
 	// Fetch full SkillsLevels data for the differences
-	var returnSkillsLevels []SkillsLevelsInCareers
+	returnSkillsLevels := make([]SkillsLevelsInCareers, 0)
 	if len(differences) > 0 {
 		var skillsLevelsFromDB []SkillsLevelsInCareers
 		if err := db.Where("skills_levels_id IN (?)", differences).Preload("Skill").Preload("Courses.Organization").Find(&skillsLevelsFromDB).Error; err != nil {
-			return nil
+			return ReturnRecommendSkillsLevels{}, err
 		}
-		returnSkillsLevels = skillsLevelsFromDB
-	} else {
-		returnSkillsLevels = make([]SkillsLevelsInCareers, 0)
+
+		if len(skillsLevelsFromDB) == 0 {
+			return ReturnRecommendSkillsLevels{returnSkillsLevels}, nil
+		}
+		// Filter skills_levels based on level_id
+		for _, skillLevel := range skillsLevelsFromDB {
+			for _, userSkillID := range currentUserSkills.UserSkillsLevels {
+				if skillLevel.LevelID > userSkillID {
+					returnSkillsLevels = append(returnSkillsLevels, skillLevel)
+					break // Move to the next skillLevel
+				}
+			}
+		}
 	}
+
+	fmt.Println(returnSkillsLevels)
 
 	var returnResult ReturnRecommendSkillsLevels
 	returnResult.DifferenceSkillsLevels = returnSkillsLevels
+	fmt.Println(returnResult.DifferenceSkillsLevels)
 
 	// Return the full SkillsLevels data for the differences
-	return returnResult
+	return returnResult, nil
 }
 
 func diffArray(arr1, arr2 []int) []int {
