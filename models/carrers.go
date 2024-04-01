@@ -47,7 +47,7 @@ type CourseInCareers struct {
 	AcademicYear    string               `gorm:"column:academic_year; default:NULL; type:VARCHAR(45);" json:"academic_year"`
 	CourseLink      string               `gorm:"column:course_link; default:NULL; type:LONGTEXT;" json:"course_link"`
 	CourseType      string               `gorm:"column:course_type; default:NULL; type:VARCHAR(45);" json:"course_type"`
-	LearningOutcome string               `gorm:"column:learinig_outcome; default:NULL; type:LONGTEXT;" json:"learning_outcome"`
+	LearningOutcome string               `gorm:"column:learning_outcome; default:NULL; type:LONGTEXT;" json:"learning_outcome"`
 	OrganizationID  int                  `gorm:"column:organization_id" json:"organization_id"`
 	Organization    OrganizationInCareer `gorm:"foreignKey:OrganizationID;references:OrganizationID" json:"organization"`
 	// SkillsLevels    []SkillsLevelsInCourses `gorm:"foreignKey:CourseID; References:CourseID;" json:"-"`
