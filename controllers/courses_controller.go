@@ -2,7 +2,6 @@ package controllers
 
 import (
 	"errors"
-	"knowledgeplus/go-api/database"
 	"knowledgeplus/go-api/models"
 	"knowledgeplus/go-api/response"
 	"net/http"
@@ -14,13 +13,16 @@ import (
 )
 
 type CourseRepo struct {
-	Db *gorm.DB
+	Db      *gorm.DB
+	UserDb  *gorm.DB
+	AdminDb *gorm.DB
 }
 
-func NewCourseRepo() *CourseRepo {
-	db := database.InitDb()
+func NewCourseRepo(db *gorm.DB, userDb *gorm.DB, adminDb *gorm.DB) *CourseRepo {
 	db.AutoMigrate(&models.Course{}, &models.Organizations{})
-	return &CourseRepo{Db: db}
+	userDb.AutoMigrate(&models.Course{}, &models.Organizations{})
+	adminDb.AutoMigrate(&models.Course{}, &models.Organizations{})
+	return &CourseRepo{Db: db, UserDb: userDb, AdminDb: adminDb}
 }
 
 // GetCourses retrieves all Course records from the database.

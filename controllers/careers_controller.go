@@ -2,9 +2,9 @@ package controllers
 
 import (
 	"errors"
-	"knowledgeplus/go-api/database"
 	"knowledgeplus/go-api/models"
 	"knowledgeplus/go-api/response"
+	"log"
 	"net/http"
 	"strconv"
 
@@ -14,18 +14,22 @@ import (
 )
 
 type CareerRepo struct {
-	Db *gorm.DB
+	Db      *gorm.DB
+	UserDb  *gorm.DB
+	AdminDb *gorm.DB
 }
 
-func NewCareerRepo() *CareerRepo {
-	db := database.InitDb()
+func NewCareerRepo(db *gorm.DB, userDb *gorm.DB, admiinDb *gorm.DB) *CareerRepo {
 	db.AutoMigrate(&models.Career{})
-	return &CareerRepo{Db: db}
+	userDb.AutoMigrate(&models.Career{})
+	admiinDb.AutoMigrate(&models.Career{})
+	return &CareerRepo{Db: db, UserDb: userDb, AdminDb: admiinDb}
 }
 
 // get all Careers use with backoffice
 // get Careers with pagination
 func (repository *CareerRepo) GetCareers(c *gin.Context) {
+	log.Default().Print(c.MustGet("userRole"))
 	var (
 		careers    []models.Career
 		pagination models.Pagination
@@ -75,7 +79,7 @@ func (repository *CareerRepo) GetAllCareersWithFilters(c *gin.Context) {
 	search := c.Query("search")
 	groupID, _ := strconv.ParseInt(c.Query("group"), 10, 64)
 
-	careers, pagination, err = models.GetCareersWithFilters(NewCareerRepo().Db, page, limit, search, groupID)
+	careers, pagination, err = models.GetCareersWithFilters(repository.Db, page, limit, search, groupID)
 	if err != nil {
 		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return

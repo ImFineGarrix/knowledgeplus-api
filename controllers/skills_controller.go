@@ -3,7 +3,6 @@ package controllers
 import (
 	"errors"
 	"fmt"
-	"knowledgeplus/go-api/database"
 	"knowledgeplus/go-api/models"
 	"knowledgeplus/go-api/response"
 	"net/http"
@@ -15,13 +14,16 @@ import (
 )
 
 type SkillRepo struct {
-	Db *gorm.DB
+	Db      *gorm.DB
+	UserDb  *gorm.DB
+	AdminDb *gorm.DB
 }
 
-func NewSkillRepo() *SkillRepo {
-	db := database.InitDb()
+func NewSkillRepo(db *gorm.DB, userDb *gorm.DB, adminDb *gorm.DB) *SkillRepo {
 	db.AutoMigrate(&models.Skill{}, &models.Levels{})
-	return &SkillRepo{Db: db}
+	userDb.AutoMigrate(&models.Skill{}, &models.Levels{})
+	adminDb.AutoMigrate(&models.Skill{}, &models.Levels{})
+	return &SkillRepo{Db: db, UserDb: userDb, AdminDb: adminDb}
 }
 
 // GetSkills retrieves all Skill records from the database.

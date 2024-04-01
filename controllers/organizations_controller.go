@@ -2,7 +2,6 @@ package controllers
 
 import (
 	"errors"
-	"knowledgeplus/go-api/database"
 	"knowledgeplus/go-api/models"
 	"knowledgeplus/go-api/response"
 	"net/http"
@@ -14,13 +13,16 @@ import (
 )
 
 type OrganizationsRepo struct {
-	Db *gorm.DB
+	Db      *gorm.DB
+	UserDb  *gorm.DB
+	AdminDb *gorm.DB
 }
 
-func NewOrganizationsRepo() *OrganizationsRepo {
-	db := database.InitDb()
+func NewOrganizationsRepo(db *gorm.DB, userDb *gorm.DB, adminDb *gorm.DB) *OrganizationsRepo {
 	db.AutoMigrate(&models.Organizations{}, &models.Organizations{})
-	return &OrganizationsRepo{Db: db}
+	userDb.AutoMigrate(&models.Organizations{}, &models.Organizations{})
+	adminDb.AutoMigrate(&models.Organizations{}, &models.Organizations{})
+	return &OrganizationsRepo{Db: db, UserDb: userDb, AdminDb: adminDb}
 }
 
 // get Organizationss

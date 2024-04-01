@@ -1,7 +1,6 @@
 package controllers
 
 import (
-	"knowledgeplus/go-api/database"
 	"knowledgeplus/go-api/models"
 	"net/http"
 	"strconv"
@@ -11,12 +10,13 @@ import (
 )
 
 type SkillsLevelsRepo struct {
-	Db *gorm.DB
+	Db      *gorm.DB
+	UserDb  *gorm.DB
+	AdminDb *gorm.DB
 }
 
-func NewSkillsLevelsRepo() *SkillsLevelsRepo {
-	db := database.InitDb()
-	return &SkillsLevelsRepo{Db: db}
+func NewSkillsLevelsRepo(db *gorm.DB, userDb *gorm.DB, adminDb *gorm.DB) *SkillsLevelsRepo {
+	return &SkillsLevelsRepo{Db: db, UserDb: userDb, AdminDb: adminDb}
 }
 
 // GetAllSkillsLevels retrieves all SkillsLevels records from the database with pagination and optional skill name search.

@@ -2,7 +2,6 @@ package controllers
 
 import (
 	"errors"
-	"knowledgeplus/go-api/database"
 	"knowledgeplus/go-api/models"
 	"net/http"
 	"strconv"
@@ -12,16 +11,19 @@ import (
 )
 
 type LevelsRepo struct {
-	Db *gorm.DB
+	Db      *gorm.DB
+	UserDb  *gorm.DB
+	AdminDb *gorm.DB
 }
 
-func NewLevelsRepo() *LevelsRepo {
-	db := database.InitDb()
-	db.AutoMigrate(&models.Levels{},&models.Levels{})
-	return &LevelsRepo{Db: db}
+func NewLevelsRepo(db *gorm.DB, userDb *gorm.DB, adminDb *gorm.DB) *LevelsRepo {
+	db.AutoMigrate(&models.Levels{}, &models.Levels{})
+	userDb.AutoMigrate(&models.Levels{}, &models.Levels{})
+	adminDb.AutoMigrate(&models.Levels{}, &models.Levels{})
+	return &LevelsRepo{Db: db, UserDb: userDb, AdminDb: adminDb}
 }
 
-//get Levelss
+// get Levelss
 func (repository *LevelsRepo) GetLevels(c *gin.Context) {
 	var Levels []models.Level
 	print(Levels)
@@ -33,7 +35,7 @@ func (repository *LevelsRepo) GetLevels(c *gin.Context) {
 	c.JSON(http.StatusOK, Levels)
 }
 
-//get Levels by id
+// get Levels by id
 func (repository *LevelsRepo) GetLevelById(c *gin.Context) {
 	id, _ := strconv.Atoi(c.Param("id"))
 	var Levels models.Level
