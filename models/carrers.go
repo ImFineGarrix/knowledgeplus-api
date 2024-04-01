@@ -441,7 +441,7 @@ func RecommendSkillsLevelsByCareer(db *gorm.DB, currentUserSkills *CareerForReco
 		// Filter skills_levels based on level_id
 		for _, skillLevel := range skillsLevelsFromDB {
 			for _, userSkillID := range currentUserSkills.UserSkillsLevels {
-				if skillLevel.LevelID > userSkillID {
+				if skillLevel.LevelID > userSkillID && skillLevel.LevelID <= 7 {
 					returnSkillsLevels = append(returnSkillsLevels, skillLevel)
 					break // Move to the next skillLevel
 				}
