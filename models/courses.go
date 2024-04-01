@@ -76,7 +76,7 @@ type UpdateCourseDTO struct {
 	AcademicYear    string                        `gorm:"column:academic_year; default:NULL; type:VARCHAR(45);" json:"academic_year"`
 	CourseLink      string                        `gorm:"column:course_link; default:NULL; type:LONGTEXT;" json:"course_link"`
 	CourseType      string                        `gorm:"column:course_type; default:NULL; type:VARCHAR(45);" json:"course_type"`
-	LearningOutcome string                        `gorm:"column:learinig_outcome; default:NULL; type:LONGTEXT;" json:"learning_outcome"`
+	LearningOutcome string                        `gorm:"column:learning_outcome; default:NULL; type:LONGTEXT;" json:"learning_outcome"`
 	Organization    OrganizationInCourses         `gorm:"foreignKey:OrganizationID;references:OrganizationID" json:"organization"`
 	OrganizationID  int                           `gorm:"column:organization_id" json:"organization_id"`
 	SkillsLevels    []SkillsLevelsInCoursesUpdate `gorm:"many2many:courses_skills_levels;foreignKey:CourseID;joinForeignKey:CourseID;References:SkillsLevelsID;joinReferences:SkillsLevelsID" json:"skills_levels"`
