@@ -1,6 +1,8 @@
 package models
 
 import (
+	"strings"
+
 	"gorm.io/gorm"
 )
 
@@ -156,6 +158,8 @@ func GetAllCoursesWithFilter(db *gorm.DB, page, limit int, search string) (cours
 	// Create a query builder with preloads and filters
 	query := db.Preload("Organization").Preload("SkillsLevels.Skill").Preload("SkillsLevels.Careers").Preload("SkillsLevels").Offset(offset).Limit(limit)
 
+	search = strings.TrimSpace(search)
+
 	if search != "" {
 		query = query.Where("name LIKE ?", "%"+search+"%")
 	}
@@ -165,13 +169,17 @@ func GetAllCoursesWithFilter(db *gorm.DB, page, limit int, search string) (cours
 		return nil, Pagination{}, err
 	}
 
-	// Calculate total pages
+	// Calculate total count
 	var totalCount int64
-	if err := query.Model(&Course{}).Count(&totalCount).Error; err != nil {
+	if err := db.Model(&Course{}).Where("name LIKE ?", "%"+search+"%").Count(&totalCount).Error; err != nil {
 		return nil, Pagination{}, err
 	}
 
-	totalPages := int(totalCount)
+	// Calculate total pages
+	totalPages := int(totalCount) / limit
+	if int(totalCount)%limit != 0 {
+		totalPages++
+	}
 
 	pagination = Pagination{
 		Page:  page,

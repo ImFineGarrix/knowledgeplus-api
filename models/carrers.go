@@ -122,7 +122,11 @@ func GetCareers(db *gorm.DB, page, limit int) (careers []Career, pagination Pagi
 		return nil, Pagination{}, err
 	}
 
-	totalPages := int(totalCount)
+	// Calculate total pages
+	totalPages := int(totalCount) / limit
+	if int(totalCount)%limit != 0 {
+		totalPages++
+	}
 
 	pagination = Pagination{
 		Page:  page,
