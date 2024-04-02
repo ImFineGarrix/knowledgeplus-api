@@ -4,7 +4,6 @@ import (
 	"errors"
 	"knowledgeplus/go-api/models"
 	"knowledgeplus/go-api/response"
-	"log"
 	"net/http"
 	"strconv"
 
@@ -29,7 +28,7 @@ func NewCareerRepo(db *gorm.DB, userDb *gorm.DB, admiinDb *gorm.DB) *CareerRepo 
 // get all Careers use with backoffice
 // get Careers with pagination
 func (repository *CareerRepo) GetCareers(c *gin.Context) {
-	log.Default().Print(c.MustGet("userRole"))
+	// log.Default().Print(c.MustGet("userRole"))
 	var (
 		careers    []models.Career
 		pagination models.Pagination

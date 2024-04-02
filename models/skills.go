@@ -64,10 +64,7 @@ func GetSkills(db *gorm.DB, page, limit int, skills *[]Skill) (pagination Pagina
 	}
 
 	// Calculate total pages
-	totalPages := int(totalCount) / limit
-	if int(totalCount)%limit != 0 {
-		totalPages++
-	}
+	totalPages := int(totalCount)
 
 	pagination = Pagination{
 		Page:  page,
@@ -96,7 +93,7 @@ func GetAllSkillsWithFilter(db *gorm.DB, page, limit int, search string) (skills
 
 	// Calculate total pages
 	var totalCount int64
-	if err := query.Model(&Skill{}).Count(&totalCount).Error; err != nil {
+	if err := db.Model(&Skill{}).Count(&totalCount).Error; err != nil {
 		return nil, Pagination{}, err
 	}
 

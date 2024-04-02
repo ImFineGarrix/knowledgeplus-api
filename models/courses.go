@@ -169,17 +169,13 @@ func GetAllCoursesWithFilter(db *gorm.DB, page, limit int, search string) (cours
 		return nil, Pagination{}, err
 	}
 
-	// Calculate total count
+	// Calculate total pages
 	var totalCount int64
-	if err := db.Model(&Course{}).Where("name LIKE ?", "%"+search+"%").Count(&totalCount).Error; err != nil {
+	if err := db.Model(&Course{}).Count(&totalCount).Error; err != nil {
 		return nil, Pagination{}, err
 	}
 
-	// Calculate total pages
-	totalPages := int(totalCount) / limit
-	if int(totalCount)%limit != 0 {
-		totalPages++
-	}
+	totalPages := int(totalCount)
 
 	pagination = Pagination{
 		Page:  page,

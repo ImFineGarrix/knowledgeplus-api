@@ -122,11 +122,7 @@ func GetCareers(db *gorm.DB, page, limit int) (careers []Career, pagination Pagi
 		return nil, Pagination{}, err
 	}
 
-	// Calculate total pages
-	totalPages := int(totalCount) / limit
-	if int(totalCount)%limit != 0 {
-		totalPages++
-	}
+	totalPages := int(totalCount)
 
 	pagination = Pagination{
 		Page:  page,
@@ -201,7 +197,7 @@ func GetCareersWithFilters(db *gorm.DB, page, limit int, search string, groupID 
 
 	// Calculate total pages
 	var totalCount int64
-	if err := query.Model(&Career{}).Count(&totalCount).Error; err != nil {
+	if err := db.Model(&Career{}).Count(&totalCount).Error; err != nil {
 		return nil, Pagination{}, err
 	}
 
