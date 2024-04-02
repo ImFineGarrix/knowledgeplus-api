@@ -7,6 +7,7 @@ import (
 	"knowledgeplus/go-api/response"
 	"net/http"
 	"strconv"
+	"strings"
 
 	"github.com/gin-gonic/gin"
 	"github.com/go-playground/validator/v10"
@@ -293,9 +294,21 @@ func (repository *SkillRepo) UpdateSkill(c *gin.Context) {
 	// Update the skill record
 	err = models.UpdateSkill(repository.Db, &updatedSkill)
 	if err != nil {
+		// Check for specific error and respond accordingly
+		if strings.Contains(err.Error(), "failed to delete existing skills level") {
+			out := response.ErrorMsg{
+				Code:    http.StatusBadRequest,
+				Field:   "Levels",
+				Message: "You cannot delete this skill level because it's being used in some course or career.",
+			}
+			c.JSON(http.StatusBadRequest, out)
+			return
+		}
 		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err})
 		return
 	}
+
+	c.JSON(http.StatusOK, updatedSkill)
 
 	c.JSON(http.StatusOK, updatedSkill)
 }

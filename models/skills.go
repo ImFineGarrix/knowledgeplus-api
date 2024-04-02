@@ -1,6 +1,8 @@
 package models
 
 import (
+	"fmt"
+
 	"gorm.io/gorm"
 )
 
@@ -294,7 +296,7 @@ func UpdateSkill(db *gorm.DB, updatedSkill *Skill) (err error) {
 		if !found {
 			if err := tx.Delete(&existingSkillsLevel).Error; err != nil {
 				tx.Rollback()
-				return err
+				return fmt.Errorf("failed to delete existing skills level: %w", err)
 			}
 		}
 	}
