@@ -8,11 +8,11 @@ type Course struct {
 	CourseID        int                     `gorm:"column:course_id;primaryKey" json:"course_id"`
 	Name            string                  `gorm:"column:name;not null; type:VARCHAR(255);" json:"name" binding:"required,max=255"`
 	Description     string                  `gorm:"column:description; default:NULL; type:LONGTEXT;" json:"description" binding:"max=1500"`
-	LearnHours      string                  `gorm:"column:learn_hours; default:NULL; type:VARCHAR(45);" json:"learn_hours" binding:"max=255"`
-	AcademicYear    string                  `gorm:"column:academic_year; default:NULL; type:VARCHAR(45);" json:"academic_year" binding:"max=255"`
+	LearnHours      string                  `gorm:"column:learn_hours; default:NULL; type:VARCHAR(45);" json:"learn_hours" binding:"max=45"`
+	AcademicYear    string                  `gorm:"column:academic_year; default:NULL; type:VARCHAR(45);" json:"academic_year" binding:"max=45"`
 	CourseLink      string                  `gorm:"column:course_link; default:NULL; type:LONGTEXT;" json:"course_link" binding:"max=2000"`
-	CourseType      string                  `gorm:"column:course_type; default:NULL; type:VARCHAR(45);" json:"course_type" binding:"max=255"`
-	LearningOutcome string                  `gorm:"column:learning_outcome; default:NULL; type:LONGTEXT;" json:"learning_outcome" binding:"max=255"`
+	CourseType      string                  `gorm:"column:course_type; default:NULL; type:VARCHAR(45);" json:"course_type" binding:"max=45"`
+	LearningOutcome string                  `gorm:"column:learning_outcome; default:NULL; type:LONGTEXT;" json:"learning_outcome" binding:"max=1500"`
 	Organization    OrganizationInCourses   `gorm:"foreignKey:OrganizationID;references:OrganizationID" json:"organization"`
 	OrganizationID  int                     `gorm:"column:organization_id" json:"organization_id"`
 	SkillsLevels    []SkillsLevelsInCourses `gorm:"many2many:courses_skills_levels;foreignKey:CourseID;joinForeignKey:CourseID;References:SkillsLevelsID;joinReferences:SkillsLevelsID" json:"skills_levels"`
