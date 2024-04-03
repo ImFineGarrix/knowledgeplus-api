@@ -3,6 +3,7 @@ package routes
 import (
 	"knowledgeplus/go-api/controllers"
 	"knowledgeplus/go-api/database"
+	"knowledgeplus/go-api/middleware"
 
 	"github.com/gin-gonic/gin"
 )
@@ -16,7 +17,7 @@ func SetupRoutes(defaultPath *gin.RouterGroup) {
 	db02Admin := database.InitDb02Admin()
 
 	// Initialize middleware
-	// authMiddleware := middleware.AuthMiddleware()
+	authMiddleware := middleware.AuthMiddleware()
 
 	AuthRepo := controllers.NewAuthRepo(db02, db02User, db02Admin)
 	defaultPath.POST("/backoffice/auth/login", AuthRepo.LoginHandler)
@@ -75,7 +76,7 @@ func SetupRoutes(defaultPath *gin.RouterGroup) {
 
 	//** all backoffice!! **//
 
-	// defaultPath.Use(authMiddleware)
+	defaultPath.Use(authMiddleware)
 
 	/** careers models */
 	defaultPath.GET("/backoffice/careers", CareerRepo.GetCareers)
