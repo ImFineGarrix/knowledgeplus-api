@@ -16,15 +16,11 @@ func GetErrorMsg(fe validator.FieldError) string {
 	case "required":
 		return fe.Field() + " is required"
 	case "max":
-		return "lenght of " + fe.Field() + " must not be over."
+		return "length of " + fe.Field() + " must not be over."
 	case "email":
-		return "email field is not correct format."
-	case "eq":
-		if fe.Field() == "role" {
-			return fe.Field() + " must be correct role."
-		} else {
-			return fe.Field() + " must be equal to " + fe.Param()
-		}
+		return "email field is not in the correct format."
+	case "eq=owner|eq=admin|eq=user":
+		return fe.Field() + " must be one of the allowed."
 	}
 	return "Unknown error"
 }
