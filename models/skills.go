@@ -93,7 +93,7 @@ func GetAllSkillsWithFilter(db *gorm.DB, page, limit int, search string) (skills
 
 	// Calculate total pages
 	var totalCount int64
-	if err := db.Model(&Skill{}).Count(&totalCount).Error; err != nil {
+	if err := db.Model(&Skill{}).Where("name LIKE ?", "%"+search+"%").Count(&totalCount).Error; err != nil {
 		return nil, Pagination{}, err
 	}
 

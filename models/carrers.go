@@ -197,7 +197,7 @@ func GetCareersWithFilters(db *gorm.DB, page, limit int, search string, groupID 
 
 	// Calculate total pages
 	var totalCount int64
-	if err := db.Model(&Career{}).Count(&totalCount).Error; err != nil {
+	if err := db.Model(&Career{}).Where("name LIKE ?", "%"+search+"%").Count(&totalCount).Error; err != nil {
 		return nil, Pagination{}, err
 	}
 
