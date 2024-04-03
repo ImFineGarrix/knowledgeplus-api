@@ -261,6 +261,14 @@ func (repository *UserRepo) DeleteUserById(c *gin.Context) {
 		repoByRole = repository.UserDb
 	}
 
+	var user models.User
+
+	findErr := repository.Db.Where("user_id = ?", id).First(&user).Error
+	if findErr != nil {
+		c.AbortWithStatusJSON(http.StatusNotFound, gin.H{"error": "User not found"})
+		return
+	}
+
 	err := models.DeleteUserById(repoByRole, uint(id))
 	if err != nil {
 		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err})
