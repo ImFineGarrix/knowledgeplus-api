@@ -7,7 +7,7 @@ type User struct {
 	Name     string `gorm:"column:name;not null; type:VARCHAR(255);" json:"name" binding:"required,max=255"`
 	Email    string `gorm:"column:email;not null; type:VARCHAR(100);" json:"email" binding:"required,email,max=255"`
 	Password string `gorm:"column:password;not null; type:VARCHAR(200);" json:"password" binding:"max=255"`
-	Role     string `gorm:"column:role;not null; type:ENUM('owner','admin');" json:"role" binding:"required,max=255"`
+	Role     string `gorm:"column:role;not null; type:ENUM('owner','admin');" json:"role" binding:"required,max=255,eq=owner|eq=admin|eq=user"`
 }
 
 type UserLogin struct {
