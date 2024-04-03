@@ -57,11 +57,22 @@ func UpdateOrganization(db *gorm.DB, id int, organization *UpdateOrganizationMod
 	return nil
 }
 
-// DeleteOrganization deletes an Organization record from the database by its ID.
-func DeleteOrganization(db *gorm.DB, id int) (err error) {
-	err = db.Where("organization_id = ?", id).Delete(&Organizations{}).Error
-	if err != nil {
+// UpdateOrganizationIDInCourses sets the organization_id in courses table to NULL for the given organization_id
+func UpdateOrganizationIDInCourses(db *gorm.DB, organizationID int) error {
+	return db.Exec("UPDATE courses SET organization_id = NULL WHERE organization_id = ?", organizationID).Error
+}
+
+// DeleteOrganization deletes the organization and sets organization_id to NULL in associated courses
+func DeleteOrganization(db *gorm.DB, organizationID int) error {
+	// Update organization_id to NULL in associated courses
+	if err := UpdateOrganizationIDInCourses(db, organizationID); err != nil {
 		return err
 	}
+
+	// Delete the organization
+	if err := db.Delete(&Organizations{}, organizationID).Error; err != nil {
+		return err
+	}
+
 	return nil
 }
