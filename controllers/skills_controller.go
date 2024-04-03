@@ -292,7 +292,7 @@ func (repository *SkillRepo) UpdateSkill(c *gin.Context) {
 	}
 
 	// Update the skill record
-	err = models.UpdateSkill(repository.Db, &updatedSkill)
+	err = models.UpdateSkill(repository.Db, &updatedSkill, id)
 	if err != nil {
 		// Check for specific error and respond accordingly
 		if strings.Contains(err.Error(), "failed to delete existing skills level") {

@@ -256,7 +256,7 @@ func CreateSkill(db *gorm.DB, skill *Skill) (err error) {
 // }
 
 // UpdateSkill updates an existing Skill record in the database along with its associated skills levels.
-func UpdateSkill(db *gorm.DB, updatedSkill *Skill) (err error) {
+func UpdateSkill(db *gorm.DB, updatedSkill *Skill, id int) (err error) {
 	existingSkill := &Skill{}
 
 	// Begin a transaction
@@ -311,6 +311,8 @@ func UpdateSkill(db *gorm.DB, updatedSkill *Skill) (err error) {
 				return err
 			}
 		} else {
+			fmt.Println(updatedSkillsLevel.SkillID)
+			updatedSkillsLevel.SkillID = &id
 			// Create new skills level
 			if err := tx.Create(&updatedSkillsLevel).Error; err != nil {
 				tx.Rollback()
