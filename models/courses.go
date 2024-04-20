@@ -21,16 +21,16 @@ type Course struct {
 }
 
 type CourseWithoutSkillLevels struct {
-	CourseID        int                   `gorm:"column:course_id;primaryKey" json:"course_id"`
-	Name            string                `gorm:"column:name;not null; type:VARCHAR(255);" json:"name" binding:"required,max=255"`
-	Description     string                `gorm:"column:description; default:NULL; type:LONGTEXT;" json:"description" binding:"max=1500"`
-	LearnHours      string                `gorm:"column:learn_hours; default:NULL; type:VARCHAR(45);" json:"learn_hours"`
-	AcademicYear    string                `gorm:"column:academic_year; default:NULL; type:VARCHAR(45);" json:"academic_year"`
-	CourseLink      string                `gorm:"column:course_link; default:NULL; type:LONGTEXT;" json:"course_link"`
-	LearningOutcome string                `gorm:"column:learning_outcome; default:NULL; type:LONGTEXT;" json:"learning_outcome"`
-	Organization    OrganizationInCourses `gorm:"foreignKey:OrganizationID;references:OrganizationID" json:"organization"`
-	OrganizationID  int                   `gorm:"column:organization_id" json:"organization_id"`
-	// SkillsLevels    []SkillsLevelsInCourses `gorm:"foreignKey:CourseID; References:CourseID;" json:"-"`
+	CourseID        int                     `gorm:"column:course_id;primaryKey" json:"course_id"`
+	Name            string                  `gorm:"column:name;not null; type:VARCHAR(255);" json:"name" binding:"required,max=255"`
+	Description     string                  `gorm:"column:description; default:NULL; type:LONGTEXT;" json:"description" binding:"max=1500"`
+	LearnHours      string                  `gorm:"column:learn_hours; default:NULL; type:VARCHAR(45);" json:"learn_hours"`
+	AcademicYear    string                  `gorm:"column:academic_year; default:NULL; type:VARCHAR(45);" json:"academic_year"`
+	CourseLink      string                  `gorm:"column:course_link; default:NULL; type:LONGTEXT;" json:"course_link"`
+	LearningOutcome string                  `gorm:"column:learning_outcome; default:NULL; type:LONGTEXT;" json:"learning_outcome"`
+	Organization    OrganizationInCourses   `gorm:"foreignKey:OrganizationID;references:OrganizationID" json:"organization"`
+	OrganizationID  int                     `gorm:"column:organization_id" json:"organization_id"`
+	SkillsLevels    []SkillsLevelsInCourses `gorm:"many2many:courses_skills_levels;foreignKey:CourseID;joinForeignKey:CourseID;References:SkillsLevelsID;joinReferences:SkillsLevelsID" json:"-"`
 }
 
 type OrganizationInCourses struct {
@@ -225,8 +225,12 @@ func GetCoursesBySkillId(db *gorm.DB, skillID, page, limit int, courses *[]Cours
 // GetCoursesByCareerId retrieves courses based on the provided CareerID with pagination.
 func GetCoursesByCareerId(db *gorm.DB, careerID, page, limit int, courses *[]CourseWithoutSkillLevels) (pagination Pagination, err error) {
 	offset := (page - 1) * limit
-	err = db.Preload("Organization").
-		Where("organization_id = ?", careerID).
+	err = db.Preload("Organization").Preload("SkillsLevels.Skill").Preload("SkillsLevels.Careers").Preload("SkillsLevels").
+		Joins("JOIN courses_skills_levels ON courses.course_id = courses_skills_levels.course_id").
+		Joins("JOIN skills_levels ON courses_skills_levels.skills_levels_id = skills_levels.skills_levels_id").
+		Joins("JOIN careers_skills_levels ON skills_levels.skills_levels_id = careers_skills_levels.skills_levels_id").
+		Joins("JOIN careers ON careers_skills_levels.career_id = careers.career_id").
+		Where("careers.career_id = ?", careerID).
 		Offset(offset).Limit(limit).
 		Find(courses).Error
 	if err != nil {
@@ -236,7 +240,11 @@ func GetCoursesByCareerId(db *gorm.DB, careerID, page, limit int, courses *[]Cou
 	// Count total courses for pagination
 	var totalCount int64
 	if err := db.Model(&CourseWithoutSkillLevels{}).
-		Where("organization_id = ?", careerID).
+		Joins("JOIN courses_skills_levels ON courses.course_id = courses_skills_levels.course_id").
+		Joins("JOIN skills_levels ON courses_skills_levels.skills_levels_id = skills_levels.skills_levels_id").
+		Joins("JOIN careers_skills_levels ON skills_levels.skills_levels_id = careers_skills_levels.skills_levels_id").
+		Joins("JOIN careers ON careers_skills_levels.career_id = careers.career_id").
+		Where("careers.career_id = ?", careerID).
 		Count(&totalCount).Error; err != nil {
 		return Pagination{}, err
 	}
