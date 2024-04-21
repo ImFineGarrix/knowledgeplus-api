@@ -413,10 +413,16 @@ func DeleteCareerById(db *gorm.DB, id int) (err error) {
 
 func RecommendSkillsLevelsByCareer(db *gorm.DB, currentUserSkills *CareerForRecommendSkillsLevels) (result ReturnRecommendSkillsLevels, ReturnError error) {
 	currentSkills := currentUserSkills.UserSkillsLevels
+	var returnResult ReturnRecommendSkillsLevels
 
 	var career Career
 	if err := db.Where("career_id = ?", currentUserSkills.CurrentCareerID).Preload("SkillsLevels.Skill").Preload("SkillsLevels.Courses.Organization").Preload("SkillsLevels").Preload("Groups").First(&career).Error; err != nil {
 		return ReturnRecommendSkillsLevels{}, err
+	}
+
+	if len(currentSkills) == 0 {
+		returnResult.DifferenceSkillsLevels = career.SkillsLevels
+		return returnResult, nil
 	}
 
 	var skillLevelsIDs []int
@@ -449,9 +455,8 @@ func RecommendSkillsLevelsByCareer(db *gorm.DB, currentUserSkills *CareerForReco
 		}
 	}
 
-	fmt.Println(returnSkillsLevels)
+	// fmt.Println(returnSkillsLevels)
 
-	var returnResult ReturnRecommendSkillsLevels
 	returnResult.DifferenceSkillsLevels = returnSkillsLevels
 	fmt.Println(returnResult.DifferenceSkillsLevels)
 
