@@ -578,7 +578,10 @@ func RecommendSkillsLevelsByCareer(db *gorm.DB, currentUserSkills *CareerForReco
 			// 	fmt.Println(returnResult.DifferenceSkillsLevels[i].LevelID)
 			// 	fmt.Println(current.LevelID)
 			// }
-			if returnResult.DifferenceSkillsLevels[i].LevelID < current.LevelID && returnResult.DifferenceSkillsLevels[i].Skill.Name == current.Skill.Name {
+			if current.LevelID < 7 && returnResult.DifferenceSkillsLevels[i].LevelID < 7 && returnResult.DifferenceSkillsLevels[i].LevelID < current.LevelID && returnResult.DifferenceSkillsLevels[i].Skill.Name == current.Skill.Name {
+				// Remove the element at index i
+				returnResult.DifferenceSkillsLevels = append(returnResult.DifferenceSkillsLevels[:i], returnResult.DifferenceSkillsLevels[i+1:]...)
+			} else if current.LevelID >= 7 && returnResult.DifferenceSkillsLevels[i].LevelID >= 7 && returnResult.DifferenceSkillsLevels[i].LevelID < current.LevelID && returnResult.DifferenceSkillsLevels[i].Skill.Name == current.Skill.Name {
 				// Remove the element at index i
 				returnResult.DifferenceSkillsLevels = append(returnResult.DifferenceSkillsLevels[:i], returnResult.DifferenceSkillsLevels[i+1:]...)
 			}
