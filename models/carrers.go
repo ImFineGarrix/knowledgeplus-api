@@ -456,9 +456,72 @@ func DeleteCareerById(db *gorm.DB, id int) (err error) {
 // 	return returnResult, nil
 // }
 
+// func RecommendSkillsLevelsByCareer(db *gorm.DB, currentUserSkills *CareerForRecommendSkillsLevels) (result ReturnRecommendSkillsLevels, ReturnError error) {
+// 	currentSkills := currentUserSkills.UserSkillsLevels
+// 	var returnResult ReturnRecommendSkillsLevels
+
+// 	var career Career
+// 	if err := db.Where("career_id = ?", currentUserSkills.CurrentCareerID).
+// 		Preload("SkillsLevels.Skill").
+// 		Preload("SkillsLevels.Courses.Organization").
+// 		Preload("SkillsLevels").
+// 		Preload("Groups").
+// 		First(&career).Error; err != nil {
+// 		return ReturnRecommendSkillsLevels{}, err
+// 	}
+
+// 	// Iterate through the skills levels required for the career
+// 	for _, skillLevel := range career.SkillsLevels {
+// 		found := false
+// 		// Check if the skill level is present in the user's skills
+// 		for _, userSkillLevel := range currentSkills {
+// 			if skillLevel.SkillsLevelsID == userSkillLevel {
+// 				found = true
+// 				break
+// 			}
+// 		}
+// 		// If the skill level is not present in the user's skills, include it in the recommendation
+// 		if !found {
+// 			// Check if the skill level meets the criteria in the SQL query
+// 			var maxLevel int
+// 			if skillLevel.LevelID < 7 {
+// 				err := db.Raw(`SELECT MAX(sl2.level_id) FROM skills_levels AS sl2
+//                                JOIN careers_skills_levels AS csl2 ON sl2.skills_levels_id = csl2.skills_levels_id
+//                                WHERE sl2.skill_id = ? AND csl2.career_id = ? AND sl2.level_id <= 6`,
+// 					skillLevel.SkillID, currentUserSkills.CurrentCareerID).Scan(&maxLevel).Error
+// 				if err != nil {
+// 					return ReturnRecommendSkillsLevels{}, err
+// 				}
+// 			} else {
+// 				err := db.Raw(`SELECT MAX(sl3.level_id) FROM skills_levels AS sl3
+//                                JOIN careers_skills_levels AS csl3 ON sl3.skills_levels_id = csl3.skills_levels_id
+//                                WHERE sl3.skill_id = ? AND csl3.career_id = ? AND sl3.level_id >= 7 AND sl3.level_id <= 9`,
+// 					skillLevel.SkillID, currentUserSkills.CurrentCareerID).Scan(&maxLevel).Error
+// 				if err != nil {
+// 					return ReturnRecommendSkillsLevels{}, err
+// 				}
+// 			}
+// 			if skillLevel.LevelID == maxLevel {
+// 				returnResult.DifferenceSkillsLevels = append(returnResult.DifferenceSkillsLevels, skillLevel)
+// 			}
+// 		}
+// 	}
+
+// 	return returnResult, nil
+// }
+
 func RecommendSkillsLevelsByCareer(db *gorm.DB, currentUserSkills *CareerForRecommendSkillsLevels) (result ReturnRecommendSkillsLevels, ReturnError error) {
 	currentSkills := currentUserSkills.UserSkillsLevels
 	var returnResult ReturnRecommendSkillsLevels
+
+	var arrCurrentSkillsLevels []SkillsLevelsInCareers
+	var skillsLevelsFromDB []SkillsLevelsInCareers
+	if err := db.Where("skills_levels_id IN (?)", currentSkills).Preload("Skill").Preload("Courses.Organization").Find(&skillsLevelsFromDB).Error; err != nil {
+		return ReturnRecommendSkillsLevels{}, err
+	}
+	arrCurrentSkillsLevels = skillsLevelsFromDB
+
+	// fmt.Println(arrCurrentSkillsLevels)
 
 	var career Career
 	if err := db.Where("career_id = ?", currentUserSkills.CurrentCareerID).
@@ -485,16 +548,16 @@ func RecommendSkillsLevelsByCareer(db *gorm.DB, currentUserSkills *CareerForReco
 			// Check if the skill level meets the criteria in the SQL query
 			var maxLevel int
 			if skillLevel.LevelID < 7 {
-				err := db.Raw(`SELECT MAX(sl2.level_id) FROM skills_levels AS sl2 
-                               JOIN careers_skills_levels AS csl2 ON sl2.skills_levels_id = csl2.skills_levels_id 
+				err := db.Raw(`SELECT MAX(sl2.level_id) FROM skills_levels AS sl2
+                               JOIN careers_skills_levels AS csl2 ON sl2.skills_levels_id = csl2.skills_levels_id
                                WHERE sl2.skill_id = ? AND csl2.career_id = ? AND sl2.level_id <= 6`,
 					skillLevel.SkillID, currentUserSkills.CurrentCareerID).Scan(&maxLevel).Error
 				if err != nil {
 					return ReturnRecommendSkillsLevels{}, err
 				}
 			} else {
-				err := db.Raw(`SELECT MAX(sl3.level_id) FROM skills_levels AS sl3 
-                               JOIN careers_skills_levels AS csl3 ON sl3.skills_levels_id = csl3.skills_levels_id 
+				err := db.Raw(`SELECT MAX(sl3.level_id) FROM skills_levels AS sl3
+                               JOIN careers_skills_levels AS csl3 ON sl3.skills_levels_id = csl3.skills_levels_id
                                WHERE sl3.skill_id = ? AND csl3.career_id = ? AND sl3.level_id >= 7 AND sl3.level_id <= 9`,
 					skillLevel.SkillID, currentUserSkills.CurrentCareerID).Scan(&maxLevel).Error
 				if err != nil {
@@ -503,6 +566,21 @@ func RecommendSkillsLevelsByCareer(db *gorm.DB, currentUserSkills *CareerForReco
 			}
 			if skillLevel.LevelID == maxLevel {
 				returnResult.DifferenceSkillsLevels = append(returnResult.DifferenceSkillsLevels, skillLevel)
+			}
+		}
+	}
+
+	for i := 0; i < len(returnResult.DifferenceSkillsLevels); i++ {
+		for _, current := range arrCurrentSkillsLevels {
+			// if current.SkillsLevelsID == 13 {
+			// 	fmt.Println(returnResult.DifferenceSkillsLevels[i].Skill.Name)
+			// 	fmt.Println(current.Skill.Name)
+			// 	fmt.Println(returnResult.DifferenceSkillsLevels[i].LevelID)
+			// 	fmt.Println(current.LevelID)
+			// }
+			if returnResult.DifferenceSkillsLevels[i].LevelID < current.LevelID && returnResult.DifferenceSkillsLevels[i].Skill.Name == current.Skill.Name {
+				// Remove the element at index i
+				returnResult.DifferenceSkillsLevels = append(returnResult.DifferenceSkillsLevels[:i], returnResult.DifferenceSkillsLevels[i+1:]...)
 			}
 		}
 	}
