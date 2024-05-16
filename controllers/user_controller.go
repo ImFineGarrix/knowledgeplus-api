@@ -2,7 +2,7 @@ package controllers
 
 import (
 	"errors"
-	"knowledgeplus/go-api/database"
+	"fmt"
 	"knowledgeplus/go-api/models"
 	"knowledgeplus/go-api/response"
 	"net/http"
@@ -14,20 +14,39 @@ import (
 )
 
 type UserRepo struct {
-	Db *gorm.DB
+	Db      *gorm.DB
+	UserDb  *gorm.DB
+	AdminDb *gorm.DB
 }
 
-func NewUserRepo() *UserRepo {
-	db := database.InitDb()
+func NewUserRepo(db *gorm.DB, userDb *gorm.DB, adminDb *gorm.DB) *UserRepo {
 	db.AutoMigrate(&models.User{})
-	return &UserRepo{Db: db}
+	userDb.AutoMigrate(&models.User{})
+	adminDb.AutoMigrate(&models.User{})
+	return &UserRepo{Db: db, AdminDb: adminDb, UserDb: userDb}
 }
 
 // GetUsers retrieves all User records from the database.
 func (repository *UserRepo) GetUsers(c *gin.Context) {
 	var users []models.UserGetResponse
+	// Check if the key "userRole" exists in the context
+	var repoByRole = repository.Db
+	if userRole, ok := c.Get("userRole"); ok {
+		switch userRole {
+		case "user":
+			repoByRole = repository.UserDb
+		case "admin":
+			repoByRole = repository.AdminDb
+			fmt.Println("Admin role")
+		case "owner":
+			repoByRole = repository.Db
+		default:
+		}
+	} else {
+		repoByRole = repository.UserDb
+	}
 
-	err := models.GetAllUsers(repository.Db, &users)
+	err := models.GetAllUsers(repoByRole, &users)
 	if err != nil {
 		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err})
 		return
@@ -41,7 +60,22 @@ func (repository *UserRepo) GetUserById(c *gin.Context) {
 	id, _ := strconv.Atoi(c.Param("id"))
 	var user models.UserGetResponse
 
-	err := models.GetUserById(repository.Db, &user, uint(id))
+	var repoByRole = repository.Db
+	if userRole, ok := c.Get("userRole"); ok {
+		switch userRole {
+		case "user":
+			repoByRole = repository.UserDb
+		case "admin":
+			repoByRole = repository.AdminDb
+		case "owner":
+			repoByRole = repository.Db
+		default:
+		}
+	} else {
+		repoByRole = repository.UserDb
+	}
+
+	err := models.GetUserById(repoByRole, &user, uint(id))
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			c.AbortWithStatus(http.StatusNotFound)
@@ -58,6 +92,20 @@ func (repository *UserRepo) GetUserById(c *gin.Context) {
 // CreateUser creates a new User record.
 func (repository *UserRepo) CreateUser(c *gin.Context) {
 	var user models.User
+	var repoByRole = repository.Db
+	if userRole, ok := c.Get("userRole"); ok {
+		switch userRole {
+		case "user":
+			repoByRole = repository.UserDb
+		case "admin":
+			repoByRole = repository.AdminDb
+		case "owner":
+			repoByRole = repository.Db
+		default:
+		}
+	} else {
+		repoByRole = repository.UserDb
+	}
 
 	if err := c.ShouldBindJSON(&user); err != nil {
 		var ve validator.ValidationErrors
@@ -70,14 +118,14 @@ func (repository *UserRepo) CreateUser(c *gin.Context) {
 					Message: response.GetErrorMsg(fe),
 				}
 			}
-			c.JSON(http.StatusCreated, out)
+			c.JSON(http.StatusBadRequest, out)
 		}
 		return
 	}
 
 	// Check if the name already exists in the database
-	var existingUser models.Organizations
-	if err := repository.Db.Where("name = ?", user.Name).First(&existingUser).Error; err == nil {
+	var existingUser models.User
+	if err := repoByRole.Where("name = ?", user.Name).First(&existingUser).Error; err == nil {
 		out := response.ErrorMsg{
 			Code:    http.StatusBadRequest,
 			Field:   "Name",
@@ -96,7 +144,7 @@ func (repository *UserRepo) CreateUser(c *gin.Context) {
 
 	user.Password = hashedPassword
 
-	err = models.CreateUser(repository.Db, &user)
+	err = models.CreateUser(repoByRole, &user)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create user"})
 		return
@@ -117,7 +165,22 @@ func (repository *UserRepo) UpdateUser(c *gin.Context) {
 	id, _ := strconv.Atoi(c.Param("id"))
 	var updatedUser models.UserResponse
 
-	err := repository.Db.First(&updatedUser, id).Error
+	var repoByRole = repository.Db
+	if userRole, ok := c.Get("userRole"); ok {
+		switch userRole {
+		case "user":
+			repoByRole = repository.UserDb
+		case "admin":
+			repoByRole = repository.AdminDb
+		case "owner":
+			repoByRole = repository.Db
+		default:
+		}
+	} else {
+		repoByRole = repository.UserDb
+	}
+
+	err := repoByRole.First(&updatedUser, id).Error
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			c.AbortWithStatusJSON(http.StatusNotFound, gin.H{"error": "Record not found!"})
@@ -139,14 +202,14 @@ func (repository *UserRepo) UpdateUser(c *gin.Context) {
 					Message: response.GetErrorMsg(fe),
 				}
 			}
-			c.JSON(http.StatusCreated, out)
+			c.JSON(http.StatusBadRequest, out)
 		}
 		return
 	}
 
 	// Check if the name already exists in the database
 	var existingUser models.Organizations
-	if err := repository.Db.Where("name = ? AND user_id != ?", updatedUser.Name, updatedUser.ID).First(&existingUser).Error; err == nil {
+	if err := repoByRole.Where("name = ? AND user_id != ?", updatedUser.Name, id).First(&existingUser).Error; err == nil {
 		out := response.ErrorMsg{
 			Code:    http.StatusBadRequest,
 			Field:   "Name",
@@ -165,7 +228,7 @@ func (repository *UserRepo) UpdateUser(c *gin.Context) {
 
 	updatedUser.Password = hashedPassword
 
-	err = models.UpdateUser(repository.Db, &updatedUser)
+	err = models.UpdateUser(repoByRole, &updatedUser)
 	if err != nil {
 		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err})
 		return
@@ -183,8 +246,30 @@ func (repository *UserRepo) UpdateUser(c *gin.Context) {
 // DeleteUserById deletes a User record by ID.
 func (repository *UserRepo) DeleteUserById(c *gin.Context) {
 	id, _ := strconv.Atoi(c.Param("id"))
+	var repoByRole = repository.Db
+	if userRole, ok := c.Get("userRole"); ok {
+		switch userRole {
+		case "user":
+			repoByRole = repository.UserDb
+		case "admin":
+			repoByRole = repository.AdminDb
+		case "owner":
+			repoByRole = repository.Db
+		default:
+		}
+	} else {
+		repoByRole = repository.UserDb
+	}
 
-	err := models.DeleteUserById(repository.Db, uint(id))
+	var user models.User
+
+	findErr := repository.Db.Where("user_id = ?", id).First(&user).Error
+	if findErr != nil {
+		c.AbortWithStatusJSON(http.StatusNotFound, gin.H{"error": "User not found"})
+		return
+	}
+
+	err := models.DeleteUserById(repoByRole, uint(id))
 	if err != nil {
 		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err})
 		return

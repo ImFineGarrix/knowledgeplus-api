@@ -1,6 +1,8 @@
 package models
 
 import (
+	"fmt"
+
 	"gorm.io/gorm"
 )
 
@@ -8,7 +10,7 @@ type Skill struct {
 	SkillID     *int   `gorm:"column:skill_id;primaryKey" json:"skill_id"`
 	Name        string `gorm:"column:name;not null; type:VARCHAR(255);" json:"name" binding:"required,max=255"`
 	Description string `gorm:"column:description; default:NULL; type:LONGTEXT;" json:"description" binding:"max=1500"`
-	ImageUrl    string `gorm:"column:image_url; default:NULL; type:LONGTEXT;" json:"image_url" binding:"required,max=5000"`
+	ImageUrl    string `gorm:"column:image_url; default:NULL; type:LONGTEXT;" json:"image_url" binding:"required,max=2000"`
 	Type        string `gorm:"column:type; default:NULL; type:ENUM('SOFT','HARD');" json:"type" binding:"required,max=100"`
 	// Careers     []CareerInSkills `gorm:"many2many:careers_skills;foreignKey:SkillID;joinForeignKey:SkillID;References:CareerID;joinReferences:CareerID" json:"careers"`
 	SkillsLevels []SkillsLevelsInSkills `gorm:"foreignKey:SkillID; References:SkillID;" json:"skills_levels"`
@@ -16,11 +18,11 @@ type Skill struct {
 }
 
 type UpdateSkillModels struct {
-	Name         string         `gorm:"column:name; type:VARCHAR(255);" json:"name" binding:"max=255"`
-	Description  string         `gorm:"column:description; default:NULL; type:LONGTEXT;" json:"description" binding:"max=1500"`
-	ImageUrl     string         `gorm:"column:image_url; default:NULL; type:LONGTEXT;" json:"image_url" binding:"max=5000"`
-	Type         string         `gorm:"column:type; default:NULL; type:ENUM('SOFT','HARD');" json:"type" binding:"max=100"`
-	SkillsLevels []SkillsLevels `gorm:"foreignKey:SkillID" json:"skills_levels"`
+	Name         string                 `gorm:"column:name; type:VARCHAR(255);" json:"name" binding:"max=255"`
+	Description  string                 `gorm:"column:description; default:NULL; type:LONGTEXT;" json:"description" binding:"max=1500"`
+	ImageUrl     string                 `gorm:"column:image_url; default:NULL; type:LONGTEXT;" json:"image_url" binding:"max=2000"`
+	Type         string                 `gorm:"column:type; default:NULL; type:ENUM('SOFT','HARD');" json:"type" binding:"max=100"`
+	SkillsLevels []SkillsLevelsInSkills `gorm:"foreignKey:SkillID" json:"skills_levels"`
 	// LevelID     int    `json:"level_id" binding:"required"`
 }
 
@@ -30,8 +32,6 @@ type SkillsLevelsInSkills struct {
 	KnowledgeDesc  string `gorm:"column:knowledge_desc;" json:"knowledge_desc"`
 	AbilityDesc    string `gorm:"column:ability_desc;" json:"ability_desc"`
 	LevelID        int    `gorm:"column:level_id; not null" json:"level_id"`
-	CourseID       *int   `gorm:"column:course_id; not null;" json:"-"`
-	CareerID       *int   `gorm:"column:career_id; not null;" json:"-"`
 }
 
 type Levels struct {
@@ -63,6 +63,7 @@ func GetSkills(db *gorm.DB, page, limit int, skills *[]Skill) (pagination Pagina
 		return Pagination{}, err
 	}
 
+	// Calculate total pages
 	totalPages := int(totalCount)
 
 	pagination = Pagination{
@@ -92,7 +93,7 @@ func GetAllSkillsWithFilter(db *gorm.DB, page, limit int, search string) (skills
 
 	// Calculate total pages
 	var totalCount int64
-	if err := query.Model(&Skill{}).Count(&totalCount).Error; err != nil {
+	if err := db.Model(&Skill{}).Where("name LIKE ?", "%"+search+"%").Count(&totalCount).Error; err != nil {
 		return nil, Pagination{}, err
 	}
 
@@ -115,7 +116,8 @@ func GetSkillsByCourseId(db *gorm.DB, courseID, page, limit int, skills *[]Skill
 	err = db.
 		Preload("SkillsLevels").
 		Joins("JOIN skills_levels ON skills.skill_id = skills_levels.skill_id").
-		Where("skills_levels.course_id = ?", courseID).
+		Joins("JOIN courses_skills_levels ON skills_levels.skills_levels_id = courses_skills_levels.skills_levels_id").
+		Where("courses_skills_levels.course_id = ?", courseID).
 		Distinct().
 		Offset(offset).Limit(limit).
 		Find(skills).Error
@@ -126,8 +128,11 @@ func GetSkillsByCourseId(db *gorm.DB, courseID, page, limit int, skills *[]Skill
 	// Calculate total pages
 	var totalCount int64
 	if err := db.
+		Preload("SkillsLevels").
 		Joins("JOIN skills_levels ON skills.skill_id = skills_levels.skill_id").
-		Where("skills_levels.course_id = ?", courseID).
+		Joins("JOIN courses_skills_levels ON skills_levels.skills_levels_id = courses_skills_levels.skills_levels_id").
+		Where("courses_skills_levels.course_id = ?", courseID).
+		Distinct().
 		Model(&Skill{}).
 		Count(&totalCount).Error; err != nil {
 		return Pagination{}, err
@@ -144,15 +149,15 @@ func GetSkillsByCourseId(db *gorm.DB, courseID, page, limit int, skills *[]Skill
 	return pagination, nil
 }
 
-// GetSkillsByCareerId retrieves skills based on the provided CareerID with pagination.
-func GetSkillsByCareerId(db *gorm.DB, careerID, page, limit int, skills *[]SkillInCourses) (pagination Pagination, err error) {
+// GetSkillsByCareerId retrieves all Skill records associated with a specific CareerID from the database with pagination.
+func GetSkillsByCareerId(db *gorm.DB, careerID, page, limit int, skills *[]Skill) (pagination Pagination, err error) {
 	offset := (page - 1) * limit
 
-	// Assuming there's a many-to-many relationship between skills and courses through skills_levels
+	// Assuming there's a many-to-many relationship between skills and careers through careers_skills_levels
 	err = db.
 		Preload("SkillsLevels").
-		Joins("JOIN skills_levels ON skills.skill_id = skills_levels.skill_id").
-		Where("skills_levels.career_id = ?", careerID).
+		Joins("JOIN careers_skills_levels ON skills.skill_id = careers_skills_levels.skill_id").
+		Where("careers_skills_levels.career_id = ?", careerID).
 		Distinct().
 		Offset(offset).Limit(limit).
 		Find(skills).Error
@@ -163,8 +168,8 @@ func GetSkillsByCareerId(db *gorm.DB, careerID, page, limit int, skills *[]Skill
 	// Calculate total pages
 	var totalCount int64
 	if err := db.
-		Joins("JOIN skills_levels ON skills.skill_id = skills_levels.skill_id").
-		Where("skills_levels.career_id = ?", careerID).
+		Joins("JOIN careers_skills_levels ON skills.skill_id = careers_skills_levels.skill_id").
+		Where("careers_skills_levels.career_id = ?", careerID).
 		Model(&Skill{}).
 		Count(&totalCount).Error; err != nil {
 		return Pagination{}, err
@@ -201,8 +206,57 @@ func CreateSkill(db *gorm.DB, skill *Skill) (err error) {
 	return nil
 }
 
-// UpdateSkill updates an existing Skill record in the database.
-func UpdateSkill(db *gorm.DB, updatedSkill *Skill) (err error) {
+// // UpdateSkill updates an existing Skill record in the database.
+// func UpdateSkill(db *gorm.DB, updatedSkill *Skill) (err error) {
+// 	existingSkill := &Skill{}
+
+// 	// Begin a transaction
+// 	tx := db.Begin()
+// 	defer func() {
+// 		if r := recover(); r != nil {
+// 			tx.Rollback()
+// 		}
+// 	}()
+
+// 	// Check if the skill record exists
+// 	err = tx.Preload("SkillsLevels").First(existingSkill, "skill_id = ?", updatedSkill.SkillID).Error
+// 	if err != nil {
+// 		tx.Rollback()
+// 		return err
+// 	}
+
+// 	// // Delete all existing SkillsLevels records for the specified skill
+// 	// err = tx.Where("skill_id = ?", updatedSkill.SkillID).Delete(&SkillsLevels{}).Error
+// 	// if err != nil {
+// 	// 	tx.Rollback()
+// 	// 	return err
+// 	// }
+
+// 	// // Commit the delete operation
+// 	// if err := tx.Commit().Error; err != nil {
+// 	// 	return err
+// 	// }
+
+// 	// // Begin a new transaction for the update operation
+// 	// tx = db.Begin()
+
+// 	// Save the updated skill
+// 	err = tx.Save(updatedSkill).Error
+// 	if err != nil {
+// 		tx.Rollback()
+// 		return err
+// 	}
+
+// 	// Commit the transaction for the update operation
+// 	if err := tx.Commit().Error; err != nil {
+// 		return err
+// 	}
+
+// 	return nil
+// }
+
+// UpdateSkill updates an existing Skill record in the database along with its associated skills levels.
+func UpdateSkill(db *gorm.DB, updatedSkill *Skill, id int) (err error) {
 	existingSkill := &Skill{}
 
 	// Begin a transaction
@@ -214,35 +268,60 @@ func UpdateSkill(db *gorm.DB, updatedSkill *Skill) (err error) {
 	}()
 
 	// Check if the skill record exists
-	err = tx.Preload("SkillsLevels").First(existingSkill, "skill_id = ?", updatedSkill.SkillID).Error
-	if err != nil {
+	if err := tx.Preload("SkillsLevels").First(existingSkill, "skill_id = ?", updatedSkill.SkillID).Error; err != nil {
 		tx.Rollback()
 		return err
 	}
 
-	// Delete all existing SkillsLevels records for the specified skill
-	err = tx.Where("skill_id = ?", existingSkill.SkillID).Delete(&SkillsLevels{}).Error
-	if err != nil {
-		tx.Rollback()
-		return err
-	}
-
-	// Commit the delete operation
-	if err := tx.Commit().Error; err != nil {
-		return err
-	}
-
-	// Begin a new transaction for the update operation
-	tx = db.Begin()
+	// Update the skill's fields
+	existingSkill.Name = updatedSkill.Name
+	existingSkill.Description = updatedSkill.Description
+	existingSkill.ImageUrl = updatedSkill.ImageUrl
+	existingSkill.Type = updatedSkill.Type
 
 	// Save the updated skill
-	err = tx.Save(updatedSkill).Error
-	if err != nil {
+	if err := tx.Save(existingSkill).Error; err != nil {
 		tx.Rollback()
 		return err
 	}
 
-	// Commit the transaction for the update operation
+	// Delete existing skills levels not present in the updated data
+	for _, existingSkillsLevel := range existingSkill.SkillsLevels {
+		var found bool
+		for _, updatedSkillsLevel := range updatedSkill.SkillsLevels {
+			if existingSkillsLevel.SkillsLevelsID == updatedSkillsLevel.SkillsLevelsID {
+				found = true
+				break
+			}
+		}
+		if !found {
+			if err := tx.Delete(&existingSkillsLevel).Error; err != nil {
+				tx.Rollback()
+				return fmt.Errorf("failed to delete existing skills level: %w", err)
+			}
+		}
+	}
+
+	// Save or update the updated skills levels
+	for _, updatedSkillsLevel := range updatedSkill.SkillsLevels {
+		if updatedSkillsLevel.SkillsLevelsID != 0 { // Check if SkillsLevelsID is not zero
+			// Update existing skills level
+			if err := tx.Save(&updatedSkillsLevel).Error; err != nil {
+				tx.Rollback()
+				return err
+			}
+		} else {
+			fmt.Println(updatedSkillsLevel.SkillID)
+			updatedSkillsLevel.SkillID = &id
+			// Create new skills level
+			if err := tx.Create(&updatedSkillsLevel).Error; err != nil {
+				tx.Rollback()
+				return err
+			}
+		}
+	}
+
+	// Commit the transaction
 	if err := tx.Commit().Error; err != nil {
 		return err
 	}

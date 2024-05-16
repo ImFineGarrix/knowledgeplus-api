@@ -2,7 +2,6 @@ package controllers
 
 import (
 	"errors"
-	"knowledgeplus/go-api/database"
 	"knowledgeplus/go-api/models"
 	"knowledgeplus/go-api/response"
 	"net/http"
@@ -14,18 +13,22 @@ import (
 )
 
 type CareerRepo struct {
-	Db *gorm.DB
+	Db      *gorm.DB
+	UserDb  *gorm.DB
+	AdminDb *gorm.DB
 }
 
-func NewCareerRepo() *CareerRepo {
-	db := database.InitDb()
+func NewCareerRepo(db *gorm.DB, userDb *gorm.DB, admiinDb *gorm.DB) *CareerRepo {
 	db.AutoMigrate(&models.Career{})
-	return &CareerRepo{Db: db}
+	userDb.AutoMigrate(&models.Career{})
+	admiinDb.AutoMigrate(&models.Career{})
+	return &CareerRepo{Db: db, UserDb: userDb, AdminDb: admiinDb}
 }
 
 // get all Careers use with backoffice
 // get Careers with pagination
 func (repository *CareerRepo) GetCareers(c *gin.Context) {
+	// log.Default().Print(c.MustGet("userRole"))
 	var (
 		careers    []models.Career
 		pagination models.Pagination
@@ -75,7 +78,7 @@ func (repository *CareerRepo) GetAllCareersWithFilters(c *gin.Context) {
 	search := c.Query("search")
 	groupID, _ := strconv.ParseInt(c.Query("group"), 10, 64)
 
-	careers, pagination, err = models.GetCareersWithFilters(NewCareerRepo().Db, page, limit, search, groupID)
+	careers, pagination, err = models.GetCareersWithFilters(repository.Db, page, limit, search, groupID)
 	if err != nil {
 		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
@@ -215,8 +218,7 @@ func (repository *CareerRepo) UpdateCareer(c *gin.Context) {
 	id, _ := strconv.Atoi(c.Param("id"))
 	var updatedCareer models.Career
 
-	// Check if the career record exists
-	err := models.GetCareerById(repository.Db, &updatedCareer, id)
+	err := repository.Db.First(&updatedCareer, id).Error
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			c.AbortWithStatusJSON(http.StatusNotFound, gin.H{"error": "Record not found!"})
@@ -239,7 +241,7 @@ func (repository *CareerRepo) UpdateCareer(c *gin.Context) {
 					Message: response.GetErrorMsg(fe),
 				}
 			}
-			c.JSON(http.StatusCreated, out)
+			c.JSON(http.StatusBadRequest, out)
 		} else {
 			c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 			return
@@ -249,7 +251,7 @@ func (repository *CareerRepo) UpdateCareer(c *gin.Context) {
 
 	// Check if the name already exists in the database
 	var existingCareer models.Career
-	if err := repository.Db.Where("name = ? AND career_id != ?", updatedCareer.Name, updatedCareer.CareerID).First(&existingCareer).Error; err == nil {
+	if err := repository.Db.Where("name = ? AND career_id != ?", updatedCareer.Name, id).First(&existingCareer).Error; err == nil {
 		out := response.ErrorMsg{
 			Code:    http.StatusBadRequest,
 			Field:   "Name",
@@ -286,7 +288,7 @@ func (repository *CareerRepo) DeleteCareer(c *gin.Context) {
 		return
 	}
 
-	// Delete associated records in categories_careers table
+	// Delete associated records in groups_careers table
 	err = repository.Db.Exec("DELETE FROM groups_careers WHERE career_id = ?", id).Error
 	if err != nil {
 		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err})
@@ -294,7 +296,7 @@ func (repository *CareerRepo) DeleteCareer(c *gin.Context) {
 	}
 
 	// Delete associated records in careers_skills table
-	err = repository.Db.Exec("DELETE FROM skills_levels WHERE career_id = ?", id).Error
+	err = repository.Db.Exec("DELETE FROM careers_skills_levels WHERE career_id = ?", id).Error
 	if err != nil {
 		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err})
 		return
@@ -308,4 +310,49 @@ func (repository *CareerRepo) DeleteCareer(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, gin.H{"message": "Career and associated records deleted successfully"})
+}
+
+func (repository *CareerRepo) RecommendSkillsLevelsByCareer(c *gin.Context) {
+	var Career models.CareerForRecommendSkillsLevels
+	var careerBody models.Career
+
+	// Bind the JSON request to the Career struct
+	if err := c.ShouldBindJSON(&Career); err != nil {
+		var ve validator.ValidationErrors
+		if errors.As(err, &ve) {
+			out := make([]response.ErrorMsg, len(ve))
+			for i, fe := range ve {
+				out[i] = response.ErrorMsg{
+					Code:    http.StatusBadRequest,
+					Field:   fe.Field(),
+					Message: response.GetErrorMsg(fe),
+				}
+			}
+			c.JSON(http.StatusBadRequest, out)
+			return
+		}
+		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	// Find the career record
+	err := repository.Db.Where("career_id = ?", Career.CurrentCareerID).First(&careerBody).Error
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			c.AbortWithStatusJSON(http.StatusNotFound, gin.H{"error": "Record not found!"})
+			return
+		}
+
+		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err})
+		return
+	}
+
+	// Call the function to get the differences
+	result, rErr := models.RecommendSkillsLevelsByCareer(repository.Db, &Career)
+	if rErr != nil {
+		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	// Return differences in the response
+	c.JSON(http.StatusOK, result)
 }

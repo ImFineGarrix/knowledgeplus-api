@@ -2,29 +2,36 @@ package routes
 
 import (
 	"knowledgeplus/go-api/controllers"
-	"knowledgeplus/go-api/middleware"
+	"knowledgeplus/go-api/database"
 
 	"github.com/gin-gonic/gin"
 )
 
 func SetupRoutes(defaultPath *gin.RouterGroup) {
+	db := database.InitDb()
+	dbUser := database.InitDbUser()
+	dbAdmin := database.InitDbAdmin()
+	db02 := database.InitDb02()
+	db02User := database.InitDb02User()
+	db02Admin := database.InitDb02Admin()
+
 	// Initialize middleware
-	authMiddleware := middleware.AuthMiddleware()
+	// authMiddleware := middleware.AuthMiddleware()
 
-	defaultPath.POST("/backoffice/auth/login", controllers.NewAuthRepo().LoginHandler)
-	// defaultPath.Use(authMiddleware).POST("/auth/register", controllers.NewAuthRepo().CreateUserHandler)
-	// defaultPath.POST("/admins", controllers.NewAuthRepo().CreateUserHandler)
+	AuthRepo := controllers.NewAuthRepo(db02, db02User, db02Admin)
+	defaultPath.POST("/backoffice/auth/login", AuthRepo.LoginHandler)
 
-	SectionRepo := controllers.NewSectionRepo()
-	GroupRepo := controllers.NewGroupRepo()
-	CareerRepo := controllers.NewCareerRepo()
-	SkillRepo := controllers.NewSkillRepo()
-	LevelsRepo := controllers.NewLevelsRepo()
-	CourseRepo := controllers.NewCourseRepo()
-	OrganizationRepo := controllers.NewOrganizationsRepo()
-	UserRepo := controllers.NewUserRepo()
+	SectionRepo := controllers.NewSectionRepo(db, dbUser, dbAdmin)
+	GroupRepo := controllers.NewGroupRepo(db, dbUser, dbAdmin)
+	CareerRepo := controllers.NewCareerRepo(db, dbUser, dbAdmin)
+	SkillRepo := controllers.NewSkillRepo(db, dbUser, dbAdmin)
+	SkillsLevelsRepo := controllers.NewSkillsLevelsRepo(db, dbUser, dbAdmin)
+	LevelsRepo := controllers.NewLevelsRepo(db, dbUser, dbAdmin)
+	CourseRepo := controllers.NewCourseRepo(db, dbUser, dbAdmin)
+	OrganizationRepo := controllers.NewOrganizationsRepo(db, dbUser, dbAdmin)
+	UserRepo := controllers.NewUserRepo(db02, db02User, db02Admin)
 
-	// !!all frontend!!
+	//** all frontend!! **//
 	/** careers models */
 	defaultPath.GET("/careers", CareerRepo.GetAllCareersWithFilters)
 	defaultPath.GET("/careers/:id", CareerRepo.GetCareer)
@@ -36,6 +43,9 @@ func SetupRoutes(defaultPath *gin.RouterGroup) {
 	defaultPath.GET("/skills-by-course/:course_id", SkillRepo.GetSkillsByCourseId)
 	defaultPath.GET("/skills-by-career/:career_id", SkillRepo.GetSkillsByCareerId)
 	defaultPath.GET("/skills/:id", SkillRepo.GetSkillById)
+
+	/** skills **/
+	defaultPath.GET("/skills-levels", SkillsLevelsRepo.GetAllSkillsLevels)
 
 	/** levels **/
 	defaultPath.GET("/levels", LevelsRepo.GetLevels)
@@ -60,9 +70,12 @@ func SetupRoutes(defaultPath *gin.RouterGroup) {
 	defaultPath.GET("/courses-by-skill/:skill_id", CourseRepo.GetCoursesBySkillId)
 	defaultPath.GET("/courses-by-career/:career_id", CourseRepo.GetCoursesByCareerId)
 
-	// !!all backoffice!!
+	/** Recommend Skills **/
+	defaultPath.POST("/recommended-skills", CareerRepo.RecommendSkillsLevelsByCareer)
 
-	defaultPath.Use(authMiddleware)
+	//** all backoffice!! **//
+
+	// defaultPath.Use(authMiddleware)
 
 	/** careers models */
 	defaultPath.GET("/backoffice/careers", CareerRepo.GetCareers)

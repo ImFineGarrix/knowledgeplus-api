@@ -2,7 +2,6 @@ package controllers
 
 import (
 	"errors"
-	"knowledgeplus/go-api/database"
 	"knowledgeplus/go-api/models"
 	"knowledgeplus/go-api/response"
 	"net/http"
@@ -14,13 +13,16 @@ import (
 )
 
 type GroupRepo struct {
-	Db *gorm.DB
+	Db      *gorm.DB
+	UserDb  *gorm.DB
+	AdminDb *gorm.DB
 }
 
-func NewGroupRepo() *GroupRepo {
-	db := database.InitDb()
+func NewGroupRepo(db *gorm.DB, userDb *gorm.DB, adminDb *gorm.DB) *GroupRepo {
 	db.AutoMigrate(&models.Group{}, &models.CareersInGroup{})
-	return &GroupRepo{Db: db}
+	userDb.AutoMigrate(&models.Group{}, &models.CareersInGroup{})
+	adminDb.AutoMigrate(&models.Group{}, &models.CareersInGroup{})
+	return &GroupRepo{Db: db, UserDb: userDb, AdminDb: adminDb}
 }
 
 // GetGroups retrieves all Group records from the database.
@@ -83,7 +85,7 @@ func (repository *GroupRepo) CreateGroup(c *gin.Context) {
 					Message: response.GetErrorMsg(fe),
 				}
 			}
-			c.JSON(http.StatusCreated, out)
+			c.JSON(http.StatusBadRequest, out)
 		} else {
 			c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 			return
@@ -139,7 +141,7 @@ func (repository *GroupRepo) UpdateGroup(c *gin.Context) {
 					Message: response.GetErrorMsg(fe),
 				}
 			}
-			c.JSON(http.StatusCreated, out)
+			c.JSON(http.StatusBadRequest, out)
 		} else {
 			c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 			return
@@ -149,7 +151,7 @@ func (repository *GroupRepo) UpdateGroup(c *gin.Context) {
 
 	// Check if the name already exists in the database
 	var existingGroup models.Group
-	if err := repository.Db.Where("name = ? AND group_id != ?", updatedGroup.Name, updatedGroup.GroupID).First(&existingGroup).Error; err == nil {
+	if err := repository.Db.Where("name = ? AND group_id != ?", updatedGroup.Name, id).First(&existingGroup).Error; err == nil {
 
 		out := response.ErrorMsg{
 			Code:    http.StatusBadRequest,

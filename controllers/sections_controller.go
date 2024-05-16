@@ -2,9 +2,9 @@ package controllers
 
 import (
 	"errors"
-	"knowledgeplus/go-api/database"
 	"knowledgeplus/go-api/models"
 	"knowledgeplus/go-api/response"
+	"log"
 	"net/http"
 	"strconv"
 
@@ -14,20 +14,44 @@ import (
 )
 
 type SectionRepo struct {
-	Db *gorm.DB
+	Db      *gorm.DB
+	UserDb  *gorm.DB
+	AdminDb *gorm.DB
 }
 
-func NewSectionRepo() *SectionRepo {
-	db := database.InitDb()
+// ทำถึงแค่นี้
+func NewSectionRepo(db *gorm.DB, dbUser *gorm.DB, adminDb *gorm.DB) *SectionRepo {
 	db.AutoMigrate(&models.Section{}, &models.Groups{})
-	return &SectionRepo{Db: db}
+	dbUser.AutoMigrate(&models.Section{}, &models.Groups{})
+	adminDb.AutoMigrate(&models.Section{}, &models.Groups{})
+	return &SectionRepo{Db: db, UserDb: dbUser, AdminDb: adminDb}
 }
 
 // GetSections retrieves all Section records from the database.
 func (repository *SectionRepo) GetSections(c *gin.Context) {
 	var sections []models.Section
+	// Check if the key "userRole" exists in the context
+	var repoByRole = repository.Db
+	if userRole, ok := c.Get("userRole"); ok {
+		switch userRole {
+		case "user":
+			log.Default().Println("It's user")
+			repoByRole = repository.UserDb
+		case "admin":
+			log.Default().Println("It's admin")
+			repoByRole = repository.AdminDb
+		case "owner":
+			log.Default().Println("It's owner")
+			repoByRole = repository.Db
+		default:
+			log.Default().Println("It's default")
+		}
+	} else {
+		log.Default().Println("userRole key does not exist in context")
+		repoByRole = repository.UserDb
+	}
 
-	err := models.GetSections(repository.Db, &sections)
+	err := models.GetSections(repoByRole, &sections)
 	if err != nil {
 		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err})
 		return
@@ -41,8 +65,23 @@ func (repository *SectionRepo) GetSections(c *gin.Context) {
 func (repository *SectionRepo) GetSectionById(c *gin.Context) {
 	id, _ := strconv.Atoi(c.Param("id"))
 	var section models.Section
+	// Check if the key "userRole" exists in the context
+	var repoByRole = repository.Db
+	if userRole, ok := c.Get("userRole"); ok {
+		switch userRole {
+		case "user":
+			repoByRole = repository.UserDb
+		case "admin":
+			repoByRole = repository.AdminDb
+		case "owner":
+			repoByRole = repository.Db
+		default:
+		}
+	} else {
+		repoByRole = repository.UserDb
+	}
 
-	err := models.GetsectionById(repository.Db, &section, id)
+	err := models.GetsectionById(repoByRole, &section, id)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			c.AbortWithStatus(http.StatusNotFound)
@@ -60,6 +99,22 @@ func (repository *SectionRepo) GetSectionById(c *gin.Context) {
 func (repository *SectionRepo) CreateSection(c *gin.Context) {
 	var section models.Section
 
+	// Check if the key "userRole" exists in the context
+	var repoByRole = repository.Db
+	if userRole, ok := c.Get("userRole"); ok {
+		switch userRole {
+		case "user":
+			repoByRole = repository.UserDb
+		case "admin":
+			repoByRole = repository.AdminDb
+		case "owner":
+			repoByRole = repository.Db
+		default:
+		}
+	} else {
+		repoByRole = repository.UserDb
+	}
+
 	if err := c.ShouldBindJSON(&section); err != nil {
 		var ve validator.ValidationErrors
 		if errors.As(err, &ve) {
@@ -71,7 +126,7 @@ func (repository *SectionRepo) CreateSection(c *gin.Context) {
 					Message: response.GetErrorMsg(fe),
 				}
 			}
-			c.JSON(http.StatusCreated, out)
+			c.JSON(http.StatusBadRequest, out)
 		} else {
 			c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 			return
@@ -81,7 +136,7 @@ func (repository *SectionRepo) CreateSection(c *gin.Context) {
 
 	// Check if the name already exists in the database
 	var existingSection models.Section
-	if err := repository.Db.Where("name = ?", section.Name).First(&existingSection).Error; err == nil {
+	if err := repoByRole.Where("name = ?", section.Name).First(&existingSection).Error; err == nil {
 		out := response.ErrorMsg{
 			Code:    http.StatusBadRequest,
 			Field:   "Name",
@@ -90,7 +145,7 @@ func (repository *SectionRepo) CreateSection(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, out)
 		return
 	}
-	err := models.Createsection(repository.Db, &section)
+	err := models.Createsection(repoByRole, &section)
 	if err != nil {
 		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err})
 		return
@@ -104,8 +159,24 @@ func (repository *SectionRepo) UpdateSection(c *gin.Context) {
 	id, _ := strconv.Atoi(c.Param("id"))
 	var existingSection models.Section
 
+	// Check if the key "userRole" exists in the context
+	var repoByRole = repository.Db
+	if userRole, ok := c.Get("userRole"); ok {
+		switch userRole {
+		case "user":
+			repoByRole = repository.UserDb
+		case "admin":
+			repoByRole = repository.AdminDb
+		case "owner":
+			repoByRole = repository.Db
+		default:
+		}
+	} else {
+		repoByRole = repository.UserDb
+	}
+
 	// Fetch the existing section by ID
-	err := repository.Db.First(&existingSection, id).Error
+	err := repoByRole.First(&existingSection, id).Error
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			c.AbortWithStatusJSON(http.StatusNotFound, gin.H{"error": "Record not found!"})
@@ -128,7 +199,7 @@ func (repository *SectionRepo) UpdateSection(c *gin.Context) {
 					Message: response.GetErrorMsg(fe),
 				}
 			}
-			c.JSON(http.StatusCreated, out)
+			c.JSON(http.StatusBadRequest, out)
 		} else {
 			c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 			return
@@ -138,7 +209,7 @@ func (repository *SectionRepo) UpdateSection(c *gin.Context) {
 
 	// Check if the name already exists in the database
 	var existingSections models.Section
-	if err := repository.Db.Where("name = ? AND section_id != ?", updatedSection.Name, updatedSection.SectionID).First(&existingSections).Error; err == nil {
+	if err := repoByRole.Where("name = ? AND section_id != ?", updatedSection.Name, id).First(&existingSections).Error; err == nil {
 		out := response.ErrorMsg{
 			Code:    http.StatusBadRequest,
 			Field:   "Name",
@@ -153,7 +224,7 @@ func (repository *SectionRepo) UpdateSection(c *gin.Context) {
 	existingSection.ImageUrl = updatedSection.ImageUrl
 
 	// Save the changes
-	err = repository.Db.Save(&existingSection).Error
+	err = repoByRole.Save(&existingSection).Error
 	if err != nil {
 		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err})
 		return
@@ -167,21 +238,37 @@ func (repository *SectionRepo) DeleteSectionById(c *gin.Context) {
 	id, _ := strconv.Atoi(c.Param("id"))
 	var section models.Section
 
-	err := repository.Db.Where("section_id = ?", id).First(&section).Error
+	// Check if the key "userRole" exists in the context
+	var repoByRole = repository.Db
+	if userRole, ok := c.Get("userRole"); ok {
+		switch userRole {
+		case "user":
+			repoByRole = repository.UserDb
+		case "admin":
+			repoByRole = repository.AdminDb
+		case "owner":
+			repoByRole = repository.Db
+		default:
+		}
+	} else {
+		repoByRole = repository.UserDb
+	}
+
+	err := repoByRole.Where("section_id = ?", id).First(&section).Error
 	if err != nil {
 		c.AbortWithStatusJSON(http.StatusNotFound, gin.H{"error": "Section not found"})
 		return
 	}
 
 	// Delete associated records in sections_groups table
-	err = repository.Db.Exec("DELETE FROM sections_groups WHERE section_id = ?", id).Error
+	err = repoByRole.Exec("DELETE FROM sections_groups WHERE section_id = ?", id).Error
 	if err != nil {
 		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err})
 		return
 	}
 
 	// Delete the section record
-	err = repository.Db.Delete(&section).Error
+	err = repoByRole.Delete(&section).Error
 	if err != nil {
 		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err})
 		return

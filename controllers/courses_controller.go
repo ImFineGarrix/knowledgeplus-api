@@ -2,7 +2,6 @@ package controllers
 
 import (
 	"errors"
-	"knowledgeplus/go-api/database"
 	"knowledgeplus/go-api/models"
 	"knowledgeplus/go-api/response"
 	"net/http"
@@ -14,13 +13,16 @@ import (
 )
 
 type CourseRepo struct {
-	Db *gorm.DB
+	Db      *gorm.DB
+	UserDb  *gorm.DB
+	AdminDb *gorm.DB
 }
 
-func NewCourseRepo() *CourseRepo {
-	db := database.InitDb()
+func NewCourseRepo(db *gorm.DB, userDb *gorm.DB, adminDb *gorm.DB) *CourseRepo {
 	db.AutoMigrate(&models.Course{}, &models.Organizations{})
-	return &CourseRepo{Db: db}
+	userDb.AutoMigrate(&models.Course{}, &models.Organizations{})
+	adminDb.AutoMigrate(&models.Course{}, &models.Organizations{})
+	return &CourseRepo{Db: db, UserDb: userDb, AdminDb: adminDb}
 }
 
 // GetCourses retrieves all Course records from the database.
@@ -185,7 +187,7 @@ func (repository *CourseRepo) CreateCourse(c *gin.Context) {
 					Message: response.GetErrorMsg(fe),
 				}
 			}
-			c.JSON(http.StatusCreated, out)
+			c.JSON(http.StatusBadRequest, out)
 		} else {
 			c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 			return
@@ -220,7 +222,7 @@ func (repository *CourseRepo) UpdateCourse(c *gin.Context) {
 	var updatedCourse models.Course
 
 	// Check if the course record exists
-	err := models.GetCourseById(repository.Db, &updatedCourse, id)
+	err := repository.Db.First(&updatedCourse, id).Error
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			c.AbortWithStatusJSON(http.StatusNotFound, gin.H{"error": "Record not found!"})
@@ -243,7 +245,7 @@ func (repository *CourseRepo) UpdateCourse(c *gin.Context) {
 					Message: response.GetErrorMsg(fe),
 				}
 			}
-			c.JSON(http.StatusCreated, out)
+			c.JSON(http.StatusBadRequest, out)
 		} else {
 			c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 			return
@@ -253,7 +255,7 @@ func (repository *CourseRepo) UpdateCourse(c *gin.Context) {
 
 	// Check if the name already exists in the database
 	var existingCourse models.Course
-	if err := repository.Db.Where("name = ? AND course_id != ?", updatedCourse.Name, updatedCourse.CourseID).First(&existingCourse).Error; err == nil {
+	if err := repository.Db.Where("name = ? AND course_id != ?", updatedCourse.Name, id).First(&existingCourse).Error; err == nil {
 		out := response.ErrorMsg{
 			Code:    http.StatusBadRequest,
 			Field:   "Name",
@@ -294,7 +296,7 @@ func (repository *CourseRepo) DeleteCourseById(c *gin.Context) {
 	}
 
 	// Delete associated records in skills_levels table
-	err = repository.Db.Exec("DELETE FROM skills_levels WHERE course_id = ?", id).Error
+	err = repository.Db.Exec("DELETE FROM courses_skills_levels WHERE course_id = ?", id).Error
 	if err != nil {
 		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err})
 		return

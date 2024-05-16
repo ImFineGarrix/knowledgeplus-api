@@ -1,79 +1,58 @@
-// package models
-
-// import "gorm.io/gorm"
-
-// type SkillsLevels struct {
-// 	SkillsLevelsID int64     `gorm:"column:skills_levels_id; primaryKey; autoIncrement" json:"skills_levels_id"`
-// 	SkillID        int64     `gorm:"column:skill_id; not null" json:"skill_id"`
-// 	KnowledgeDesc  string    `gorm:"column:knowledge_desc" json:"knowledge_desc"`
-// 	AbilityDesc    string    `gorm:"column:ability_desc" json:"ability_desc"`
-// 	LevelID       int64     `gorm:"column:levels_id; not null" json:"levels_id"`
-// 	CourseID       *int64    `gorm:"column:course_id" json:"course_id"`
-// 	Skill          Skill     `gorm:"foreignKey:SkillID" json:"skill"`
-// 	Levels         Level     `gorm:"foreignKey:LevelID" json:"level"`
-// 	Course         *Course   `gorm:"foreignKey:CourseID" json:"course,omitempty"`
-// }
-
-// // Skill represents the skill table
-// type Skill struct {
-// 	SkillID int64  `gorm:"column:skill_id; primaryKey; autoIncrement" json:"skill_id"`
-// 	Name    string `gorm:"column:name; not null" json:"name"`
-// 	// Add other fields as needed
-// }
-
-// // Level represents the levels table
-// type Level struct {
-// 	LevelID int64  `gorm:"column:level_id; primaryKey" json:"level_id"`
-// 	Level   string `gorm:"column:level; not null" json:"level"`
-// 	// Add other fields as needed
-// }
-
-// // Course represents the courses table
-// type Course struct {
-// 	CourseID     int64  `gorm:"column:course_id; primaryKey; autoIncrement" json:"course_id"`
-// 	Name         string `gorm:"column:name; not null" json:"name"`
-// 	Description  string `gorm:"column:description" json:"description"`
-// 	LearnHours   string `gorm:"column:learn_hours" json:"learn_hours"`
-// 	AcademicYear string `gorm:"column:academic_year" json:"academic_year"`
-// 	CourseLink   string `gorm:"column:course_link" json:"course_link"`
-// 	Organization Organization `gorm:"foreignKey:OrganizationID" json:"organization"`
-// 	OrganizationID int64 `gorm:"column:organization_id; not null" json:"-"`
-// }
-
-// // Organization represents the organizations table
-// type Organization struct {
-// 	OrganizationID int64  `gorm:"column:organization_id; primaryKey; autoIncrement" json:"organization_id"`
-// 	Name           string `gorm:"column:name; not null" json:"name"`
-// 	Description    string `gorm:"column:description" json:"description"`
-// 	ImageURL       string `gorm:"column:image_url" json:"image_url"`
-// 	// Add other fields as needed
-// }
-
 package models
 
 import "gorm.io/gorm"
 
 type SkillsLevels struct {
-	SkillsLevelsID int    `gorm:"column:skills_levels_id; primaryKey; autoIncrement;" json:"skills_levels_id"`
-	SkillID        *int   `gorm:"column:skill_id; not null;" json:"-"`
-	KnowledgeDesc  string `gorm:"column:knowledge_desc;" json:"knowledge_desc"`
-	AbilityDesc    string `gorm:"column:ability_desc;" json:"ability_desc"`
-	LevelID        int    `gorm:"column:level_id; not null" json:"levels_id"`
-	CourseID       *int   `gorm:"column:course_id; not null;" json:"-"`
-	CareerID       *int   `gorm:"column:career_id; not null;" json:"-"`
+	SkillsLevelsID int               `gorm:"column:skills_levels_id; primaryKey; autoIncrement;" json:"skills_levels_id"`
+	SkillID        *int              `gorm:"column:skill_id;" json:"skill_id"`
+	KnowledgeDesc  string            `gorm:"column:knowledge_desc;" json:"knowledge_desc"`
+	AbilityDesc    string            `gorm:"column:ability_desc;" json:"ability_desc"`
+	LevelID        int               `gorm:"column:level_id; not null" json:"level_id"`
+	Skill          SkillInCourses    `gorm:"foreignKey:SkillID;references:SkillID" json:"skill"`
+	Careers        []CareerInCourses `gorm:"many2many:careers_skills_levels;foreignKey:SkillsLevelsID;joinForeignKey:SkillsLevelsID;References:CareerID;joinReferences:CareerID" json:"-"`
+	Courses        []CourseInCareers `gorm:"many2many:courses_skills_levels;foreignKey:SkillsLevelsID;joinForeignKey:SkillsLevelsID;References:CourseID;joinReferences:CourseID" json:"-"`
 }
 
-func (SkillsLevels) Tablename() string {
+func (SkillsLevels) TableName() string {
 	return "skills_levels"
 }
 
-// GetSkillsLevels retrieves all records from the skills_levels table.
-func GetSkillsLevels(db *gorm.DB, skillsLevels *[]SkillsLevels) (err error) {
-	err = db.Find(skillsLevels).Error
-	if err != nil {
-		return err
-	}
-	return nil
-}
+// GetAllSkillsLevels retrieves all SkillsLevels records from the database with pagination and optional skill name search.
+func GetAllSkillsLevels(db *gorm.DB, page, limit int, skillName string, skillsLevels *[]SkillsLevels) (pagination Pagination, err error) {
+	offset := (page - 1) * limit
 
-//อาจจะต้องทำ getSkillsLevelsBySkillId,getSkillsLevelsByCourseId
+	// Preload the related Skill and Careers
+	query := db.Preload("Skill").Preload("Careers").Preload("Courses").Model(&SkillsLevels{}).
+		Offset(offset).Limit(limit)
+
+	if skillName != "" {
+		query = query.Joins("JOIN skills ON skills_levels.skill_id = skills.skill_id").
+			Where("skills.name LIKE ?", "%"+skillName+"%")
+	}
+
+	err = query.Find(skillsLevels).Error
+	if err != nil {
+		return Pagination{}, err
+	}
+
+	// Calculate total pages
+	var totalCount int64
+	totalCountQuery := db.Model(&SkillsLevels{})
+	if skillName != "" {
+		totalCountQuery = totalCountQuery.Joins("JOIN skills ON skills_levels.skill_id = skills.skill_id").
+			Where("skills.name LIKE ?", "%"+skillName+"%")
+	}
+	if err := totalCountQuery.Count(&totalCount).Error; err != nil {
+		return Pagination{}, err
+	}
+
+	totalPages := int(totalCount)
+
+	pagination = Pagination{
+		Page:  page,
+		Total: totalPages,
+		Limit: limit,
+	}
+
+	return pagination, nil
+}

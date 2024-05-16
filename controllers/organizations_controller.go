@@ -2,7 +2,6 @@ package controllers
 
 import (
 	"errors"
-	"knowledgeplus/go-api/database"
 	"knowledgeplus/go-api/models"
 	"knowledgeplus/go-api/response"
 	"net/http"
@@ -14,13 +13,16 @@ import (
 )
 
 type OrganizationsRepo struct {
-	Db *gorm.DB
+	Db      *gorm.DB
+	UserDb  *gorm.DB
+	AdminDb *gorm.DB
 }
 
-func NewOrganizationsRepo() *OrganizationsRepo {
-	db := database.InitDb()
+func NewOrganizationsRepo(db *gorm.DB, userDb *gorm.DB, adminDb *gorm.DB) *OrganizationsRepo {
 	db.AutoMigrate(&models.Organizations{}, &models.Organizations{})
-	return &OrganizationsRepo{Db: db}
+	userDb.AutoMigrate(&models.Organizations{}, &models.Organizations{})
+	adminDb.AutoMigrate(&models.Organizations{}, &models.Organizations{})
+	return &OrganizationsRepo{Db: db, UserDb: userDb, AdminDb: adminDb}
 }
 
 // get Organizationss
@@ -65,7 +67,7 @@ func (repository *OrganizationsRepo) CreateOrganization(c *gin.Context) {
 					Message: response.GetErrorMsg(fe),
 				}
 			}
-			c.JSON(http.StatusCreated, out)
+			c.JSON(http.StatusBadRequest, out)
 		} else {
 			c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 			return
@@ -99,11 +101,10 @@ func (repository *OrganizationsRepo) UpdateOrganization(c *gin.Context) {
 	var existingOrganization models.Organizations
 	var updatedOrganization models.UpdateOrganizationModels
 	var currentOrganization models.UpdateOrganizationModels
-
-	err := models.GetOrganizationById(repository.Db, &existingOrganization, id)
+	err := repository.Db.First(&existingOrganization, id).Error
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			c.AbortWithStatus(http.StatusNotFound)
+			c.AbortWithStatusJSON(http.StatusNotFound, gin.H{"error": "Record not found!"})
 			return
 		}
 
@@ -122,7 +123,7 @@ func (repository *OrganizationsRepo) UpdateOrganization(c *gin.Context) {
 					Message: response.GetErrorMsg(fe),
 				}
 			}
-			c.JSON(http.StatusCreated, out)
+			c.JSON(http.StatusBadRequest, out)
 		} else {
 			c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 			return
@@ -132,7 +133,7 @@ func (repository *OrganizationsRepo) UpdateOrganization(c *gin.Context) {
 
 	// Check if the name already exists in the database
 	var existingOrganizations models.Organizations
-	if err := repository.Db.Where("name = ? AND organization_id != ?", updatedOrganization.Name, existingOrganization.OrganizationID).First(&existingOrganizations).Error; err == nil {
+	if err := repository.Db.Where("name = ? AND organization_id != ?", updatedOrganization.Name, id).First(&existingOrganizations).Error; err == nil {
 		out := response.ErrorMsg{
 			Code:    http.StatusBadRequest,
 			Field:   "Name",

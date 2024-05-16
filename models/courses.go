@@ -1,6 +1,8 @@
 package models
 
 import (
+	"strings"
+
 	"gorm.io/gorm"
 )
 
@@ -8,13 +10,14 @@ type Course struct {
 	CourseID        int                     `gorm:"column:course_id;primaryKey" json:"course_id"`
 	Name            string                  `gorm:"column:name;not null; type:VARCHAR(255);" json:"name" binding:"required,max=255"`
 	Description     string                  `gorm:"column:description; default:NULL; type:LONGTEXT;" json:"description" binding:"max=1500"`
-	LearnHours      string                  `gorm:"column:learn_hours; default:NULL; type:VARCHAR(45);" json:"learn_hours"`
-	AcademicYear    string                  `gorm:"column:academic_year; default:NULL; type:VARCHAR(45);" json:"academic_year"`
-	CourseLink      string                  `gorm:"column:course_link; default:NULL; type:LONGTEXT;" json:"course_link"`
-	LearningOutcome string                  `gorm:"column:learinig_outcome; default:NULL; type:LONGTEXT;" json:"learning_outcome"`
+	LearnHours      string                  `gorm:"column:learn_hours; default:NULL; type:VARCHAR(45);" json:"learn_hours" binding:"max=45"`
+	AcademicYear    string                  `gorm:"column:academic_year; default:NULL; type:VARCHAR(45);" json:"academic_year" binding:"max=45"`
+	CourseLink      string                  `gorm:"column:course_link; default:NULL; type:LONGTEXT;" json:"course_link" binding:"max=2000"`
+	CourseType      string                  `gorm:"column:course_type; default:NULL; type:VARCHAR(45);" json:"course_type" binding:"max=45"`
+	LearningOutcome string                  `gorm:"column:learning_outcome; default:NULL; type:LONGTEXT;" json:"learning_outcome" binding:"max=1500"`
 	Organization    OrganizationInCourses   `gorm:"foreignKey:OrganizationID;references:OrganizationID" json:"organization"`
 	OrganizationID  int                     `gorm:"column:organization_id" json:"organization_id"`
-	SkillsLevels    []SkillsLevelsInCourses `gorm:"foreignKey:CourseID; References:CourseID;" json:"skills_levels"`
+	SkillsLevels    []SkillsLevelsInCourses `gorm:"many2many:courses_skills_levels;foreignKey:CourseID;joinForeignKey:CourseID;References:SkillsLevelsID;joinReferences:SkillsLevelsID" json:"skills_levels"`
 }
 
 type CourseWithoutSkillLevels struct {
@@ -24,29 +27,31 @@ type CourseWithoutSkillLevels struct {
 	LearnHours      string                  `gorm:"column:learn_hours; default:NULL; type:VARCHAR(45);" json:"learn_hours"`
 	AcademicYear    string                  `gorm:"column:academic_year; default:NULL; type:VARCHAR(45);" json:"academic_year"`
 	CourseLink      string                  `gorm:"column:course_link; default:NULL; type:LONGTEXT;" json:"course_link"`
-	LearningOutcome string                  `gorm:"column:learinig_outcome; default:NULL; type:LONGTEXT;" json:"learning_outcome"`
+	CourseType      string                  `gorm:"column:course_type; default:NULL; type:VARCHAR(45);" json:"course_type" binding:"max=45"`
+	LearningOutcome string                  `gorm:"column:learning_outcome; default:NULL; type:LONGTEXT;" json:"learning_outcome"`
 	Organization    OrganizationInCourses   `gorm:"foreignKey:OrganizationID;references:OrganizationID" json:"organization"`
 	OrganizationID  int                     `gorm:"column:organization_id" json:"organization_id"`
-	SkillsLevels    []SkillsLevelsInCourses `gorm:"foreignKey:CourseID; References:CourseID;" json:"-"`
+	SkillsLevels    []SkillsLevelsInCourses `gorm:"many2many:courses_skills_levels;foreignKey:CourseID;joinForeignKey:CourseID;References:SkillsLevelsID;joinReferences:SkillsLevelsID" json:"-"`
 }
 
 type OrganizationInCourses struct {
 	OrganizationID int    `gorm:"column:organization_id; primaryKey;" json:"-"`
 	Name           string `gorm:"column:name; not null; type:VARCHAR(255)" json:"name" binding:"max=255"`
 	Description    string `gorm:"column:description; default:NULL; type:LONGTEXT;" json:"description" binding:"max=1500"`
-	ImageUrl       string `gorm:"column:image_url; default:NULL; type:LONGTEXT;" json:"image_url" binding:"max=5000"`
+	ImageUrl       string `gorm:"column:image_url; default:NULL; type:LONGTEXT;" json:"image_url" binding:"max=2000"`
 }
 
 type SkillsLevelsInCourses struct {
-	SkillsLevelsID int              `gorm:"column:skills_levels_id; primaryKey; autoIncrement;" json:"skills_levels_id"`
-	SkillID        *int             `gorm:"column:skill_id;" json:"skill_id"`
-	KnowledgeDesc  string           `gorm:"column:knowledge_desc;" json:"knowledge_desc"`
-	AbilityDesc    string           `gorm:"column:ability_desc;" json:"ability_desc"`
-	LevelID        int              `gorm:"column:level_id; not null" json:"level_id"`
-	CourseID       *int             `gorm:"column:course_id;" json:"-"`
-	CareerID       *int             `gorm:"column:career_id;" json:"career_id"`
-	Skill          SkillInCourses   `gorm:"foreignKey:SkillID;references:SkillID" json:"skill"`
-	Career         *CareerInCourses `gorm:"foreignKey:CareerID; References:CareerID;" json:"career"`
+	SkillsLevelsID int    `gorm:"column:skills_levels_id; primaryKey; autoIncrement;" json:"skills_levels_id"`
+	SkillID        *int   `gorm:"column:skill_id;" json:"skill_id"`
+	KnowledgeDesc  string `gorm:"column:knowledge_desc;" json:"knowledge_desc"`
+	AbilityDesc    string `gorm:"column:ability_desc;" json:"ability_desc"`
+	LevelID        int    `gorm:"column:level_id; not null" json:"level_id"`
+	// CourseID       *int             `gorm:"column:course_id;" json:"-"`
+	// CareerID       *int             `gorm:"column:career_id;" json:"career_id"`
+	Skill   SkillInCourses    `gorm:"foreignKey:SkillID;references:SkillID" json:"skill"`
+	Careers []CareerInCourses `gorm:"many2many:careers_skills_levels;foreignKey:SkillsLevelsID;joinForeignKey:SkillsLevelsID;References:CareerID;joinReferences:CareerID" json:"careers"`
+	// Career         *CareerInCourses `gorm:"foreignKey:CareerID; References:CareerID;" json:"career"`
 }
 
 type SkillInCourses struct {
@@ -59,14 +64,40 @@ type SkillInCourses struct {
 }
 
 type CareerInCourses struct {
-	CareerID     int                     `gorm:"column:career_id;primaryKey;autoIncrement;" json:"career_id"`
-	Name         string                  `gorm:"column:name; not null; type:VARCHAR(255)" json:"name" binding:"required,max=255"`
-	Description  string                  `gorm:"column:description; default:NULL; type:LONGTEXT;"  json:"description" binding:"max=1500"`
-	Groups       []GroupsInCareers       `gorm:"many2many:groups_careers;foreignKey:CareerID;joinForeignKey:CareerID;References:GroupID;joinReferences:GroupID" json:"-"`
-	SkillsLevels []SkillsLevelsInCareers `gorm:"foreignKey:CareerID; References:CareerID;" json:"-"`
+	CareerID    int    `gorm:"column:career_id;primaryKey;autoIncrement;" json:"career_id"`
+	Name        string `gorm:"column:name; not null; type:VARCHAR(255)" json:"name" binding:"required,max=255"`
+	Description string `gorm:"column:description; default:NULL; type:LONGTEXT;"  json:"description" binding:"max=1500"`
+	// Groups      []GroupsInCareers `gorm:"many2many:groups_careers;foreignKey:CareerID;joinForeignKey:CareerID;References:GroupID;joinReferences:GroupID" json:"-"`
+	// SkillsLevels []SkillsLevelsInCareers `gorm:"foreignKey:CareerID; References:CareerID;" json:"-"`
+}
+
+type UpdateCourseDTO struct {
+	CourseID        int                           `gorm:"column:course_id;primaryKey" json:"course_id"`
+	Name            string                        `gorm:"column:name;not null; type:VARCHAR(255);" json:"name" binding:"required,max=255"`
+	Description     string                        `gorm:"column:description; default:NULL; type:LONGTEXT;" json:"description" binding:"max=1500"`
+	LearnHours      string                        `gorm:"column:learn_hours; default:NULL; type:VARCHAR(45);" json:"learn_hours"`
+	AcademicYear    string                        `gorm:"column:academic_year; default:NULL; type:VARCHAR(45);" json:"academic_year"`
+	CourseLink      string                        `gorm:"column:course_link; default:NULL; type:LONGTEXT;" json:"course_link"`
+	CourseType      string                        `gorm:"column:course_type; default:NULL; type:VARCHAR(45);" json:"course_type"`
+	LearningOutcome string                        `gorm:"column:learning_outcome; default:NULL; type:LONGTEXT;" json:"learning_outcome"`
+	Organization    OrganizationInCourses         `gorm:"foreignKey:OrganizationID;references:OrganizationID" json:"organization"`
+	OrganizationID  int                           `gorm:"column:organization_id" json:"organization_id"`
+	SkillsLevels    []SkillsLevelsInCoursesUpdate `gorm:"many2many:courses_skills_levels;foreignKey:CourseID;joinForeignKey:CourseID;References:SkillsLevelsID;joinReferences:SkillsLevelsID" json:"skills_levels"`
+}
+
+type SkillsLevelsInCoursesUpdate struct {
+	SkillsLevelsID int    `gorm:"column:skills_levels_id; primaryKey; autoIncrement;" json:"skills_levels_id"`
+	SkillID        *int   `gorm:"column:skill_id;" json:"skill_id"`
+	KnowledgeDesc  string `gorm:"column:knowledge_desc;" json:"knowledge_desc"`
+	AbilityDesc    string `gorm:"column:ability_desc;" json:"ability_desc"`
+	LevelID        int    `gorm:"column:level_id; not null" json:"level_id"`
 }
 
 func (Course) TableName() string {
+	return "courses"
+}
+
+func (UpdateCourseDTO) TableName() string {
 	return "courses"
 }
 
@@ -82,6 +113,10 @@ func (SkillsLevelsInCourses) TableName() string {
 	return "skills_levels"
 }
 
+func (SkillsLevelsInCoursesUpdate) TableName() string {
+	return "skills_levels"
+}
+
 func (SkillInCourses) TableName() string {
 	return "skills"
 }
@@ -93,7 +128,7 @@ func (CareerInCourses) TableName() string {
 // GetCourses retrieves all Course records from the database with pagination.
 func GetCourses(db *gorm.DB, page, limit int, courses *[]Course) (pagination Pagination, err error) {
 	offset := (page - 1) * limit
-	err = db.Preload("SkillsLevels.Career").Preload("Organization").Preload("SkillsLevels.Skill").Model(&Course{}).
+	err = db.Preload("Organization").Preload("SkillsLevels.Skill").Preload("SkillsLevels.Careers").Preload("SkillsLevels").Model(&Course{}).
 		Offset(offset).Limit(limit).
 		Find(&courses).Error
 	if err != nil {
@@ -122,7 +157,9 @@ func GetAllCoursesWithFilter(db *gorm.DB, page, limit int, search string) (cours
 	offset := (page - 1) * limit
 
 	// Create a query builder with preloads and filters
-	query := db.Preload("SkillsLevels.Skill").Preload("SkillsLevels.Career").Preload("Organization").Offset(offset).Limit(limit)
+	query := db.Preload("Organization").Preload("SkillsLevels.Skill").Preload("SkillsLevels.Careers").Preload("SkillsLevels").Offset(offset).Limit(limit)
+
+	search = strings.TrimSpace(search)
 
 	if search != "" {
 		query = query.Where("name LIKE ?", "%"+search+"%")
@@ -135,7 +172,7 @@ func GetAllCoursesWithFilter(db *gorm.DB, page, limit int, search string) (cours
 
 	// Calculate total pages
 	var totalCount int64
-	if err := query.Model(&Course{}).Count(&totalCount).Error; err != nil {
+	if err := db.Model(&Course{}).Where("name LIKE ?", "%"+search+"%").Count(&totalCount).Error; err != nil {
 		return nil, Pagination{}, err
 	}
 
@@ -153,11 +190,9 @@ func GetAllCoursesWithFilter(db *gorm.DB, page, limit int, search string) (cours
 // GetCoursesBySkillId retrieves courses based on the provided SkillID with pagination.
 func GetCoursesBySkillId(db *gorm.DB, skillID, page, limit int, courses *[]Course) (pagination Pagination, err error) {
 	offset := (page - 1) * limit
-	err = db.
-		Preload("Organization").
-		Preload("SkillsLevels.Skill").
-		Preload("SkillsLevels.Career").
-		Joins("JOIN skills_levels ON courses.course_id = skills_levels.course_id").
+	err = db.Preload("Organization").Preload("SkillsLevels.Skill").Preload("SkillsLevels.Careers").Preload("SkillsLevels").
+		Joins("JOIN courses_skills_levels ON courses.course_id = courses_skills_levels.course_id").
+		Joins("JOIN skills_levels ON courses_skills_levels.skills_levels_id = skills_levels.skills_levels_id").
 		Where("skills_levels.skill_id = ?", skillID).
 		Distinct().
 		Model(&Course{}).
@@ -169,11 +204,9 @@ func GetCoursesBySkillId(db *gorm.DB, skillID, page, limit int, courses *[]Cours
 
 	// Count total courses for pagination
 	var totalCount int64
-	if err := db.Model(&Course{}).
-		Preload("Organization").
-		Preload("SkillsLevels.Skill").
-		Preload("SkillsLevels.Career").
-		Joins("JOIN skills_levels ON courses.course_id = skills_levels.course_id").
+	if err := db.Model(&Course{}).Preload("Organization").Preload("SkillsLevels.Skill").Preload("SkillsLevels.Careers").Preload("SkillsLevels").
+		Joins("JOIN courses_skills_levels ON courses.course_id = courses_skills_levels.course_id").
+		Joins("JOIN skills_levels ON courses_skills_levels.skills_levels_id = skills_levels.skills_levels_id").
 		Where("skills_levels.skill_id = ?", skillID).
 		Count(&totalCount).Error; err != nil {
 		return Pagination{}, err
@@ -190,17 +223,17 @@ func GetCoursesBySkillId(db *gorm.DB, skillID, page, limit int, courses *[]Cours
 	return pagination, nil
 }
 
-// GetCoursesByCareerId retrieves courses based on the provided CareerID with pagination.
 func GetCoursesByCareerId(db *gorm.DB, careerID, page, limit int, courses *[]CourseWithoutSkillLevels) (pagination Pagination, err error) {
 	offset := (page - 1) * limit
-	err = db.
-		Preload("Organization").
-		Preload("SkillsLevels.Skill").
-		Preload("SkillsLevels.Career").
-		Joins("JOIN skills_levels ON courses.course_id = skills_levels.course_id").
-		Where("skills_levels.career_id = ?", careerID).
+	err = db.Select("courses.course_id", "courses.name", "courses.description", "courses.learn_hours", "courses.academic_year", "courses.course_type", "courses.course_link", "courses.organization_id", "courses.learning_outcome").
+		Preload("Organization").Preload("SkillsLevels.Skill").Preload("SkillsLevels.Careers").Preload("SkillsLevels").
+		Joins("JOIN courses_skills_levels ON courses.course_id = courses_skills_levels.course_id").
+		Joins("JOIN skills_levels ON courses_skills_levels.skills_levels_id = skills_levels.skills_levels_id").
+		Joins("JOIN careers_skills_levels ON skills_levels.skills_levels_id = careers_skills_levels.skills_levels_id").
+		Joins("JOIN careers ON careers_skills_levels.career_id = careers.career_id").
+		Where("careers.career_id = ?", careerID).
+		Group("courses.course_id").
 		Distinct().
-		Model(&CourseWithoutSkillLevels{}).
 		Offset(offset).Limit(limit).
 		Find(courses).Error
 	if err != nil {
@@ -210,11 +243,15 @@ func GetCoursesByCareerId(db *gorm.DB, careerID, page, limit int, courses *[]Cou
 	// Count total courses for pagination
 	var totalCount int64
 	if err := db.Model(&CourseWithoutSkillLevels{}).
-		Preload("Organization").
-		Preload("SkillsLevels.Skill").
-		Preload("SkillsLevels.Career").
-		Joins("JOIN skills_levels ON courses.course_id = skills_levels.course_id").
-		Where("skills_levels.career_id = ?", careerID).
+		Select("courses.course_id", "courses.name", "courses.description", "courses.learn_hours", "courses.academic_year", "courses.course_type", "courses.course_link", "courses.organization_id", "courses.learning_outcome").
+		Preload("Organization").Preload("SkillsLevels.Skill").Preload("SkillsLevels.Careers").Preload("SkillsLevels").
+		Joins("JOIN courses_skills_levels ON courses.course_id = courses_skills_levels.course_id").
+		Joins("JOIN skills_levels ON courses_skills_levels.skills_levels_id = skills_levels.skills_levels_id").
+		Joins("JOIN careers_skills_levels ON skills_levels.skills_levels_id = careers_skills_levels.skills_levels_id").
+		Joins("JOIN careers ON careers_skills_levels.career_id = careers.career_id").
+		Where("careers.career_id = ?", careerID).
+		Group("courses.course_id").
+		Distinct().
 		Count(&totalCount).Error; err != nil {
 		return Pagination{}, err
 	}
@@ -229,6 +266,85 @@ func GetCoursesByCareerId(db *gorm.DB, careerID, page, limit int, courses *[]Cou
 
 	return pagination, nil
 }
+
+// func GetCoursesByCareerId(db *gorm.DB, careerID, page, limit int, courses *[]CourseWithoutSkillLevels) (pagination Pagination, err error) {
+// 	offset := (page - 1) * limit
+// 	err = db.Select("c.course_id AS course_id, c.name AS course_name, c.description AS course_description, c.learn_hours, c.academic_year, c.course_type, c.course_link, c.organization_id AS organization_id").
+// 		Preload("Organization").
+// 		Joins("JOIN INT371.organizations AS o ON c.organization_id = o.organization_id").
+// 		Joins("JOIN INT371.courses_skills_levels AS csl ON c.course_id = csl.course_id").
+// 		Joins("JOIN INT371.skills_levels AS sl ON csl.skills_levels_id = sl.skills_levels_id").
+// 		Joins("JOIN INT371.careers_skills_levels AS csl_career ON sl.skills_levels_id = csl_career.skills_levels_id").
+// 		Joins("JOIN INT371.careers AS ca ON csl_career.career_id = ca.career_id").
+// 		Where("ca.career_id = ?", careerID).
+// 		Group("c.course_id, c.name, c.description, c.learn_hours, c.academic_year, c.course_type, c.course_link, c.organization_id").
+// 		Offset(offset).Limit(limit).
+// 		Find(courses).Error
+// 	if err != nil {
+// 		return Pagination{}, err
+// 	}
+
+// 	// Count total courses for pagination
+// 	var totalCount int64
+// 	if err := db.Model(&CourseWithoutSkillLevels{}).
+// 		Joins("JOIN INT371.organizations AS o ON c.organization_id = o.organization_id").
+// 		Joins("JOIN INT371.courses_skills_levels AS csl ON c.course_id = csl.course_id").
+// 		Joins("JOIN INT371.skills_levels AS sl ON csl.skills_levels_id = sl.skills_levels_id").
+// 		Joins("JOIN INT371.careers_skills_levels AS csl_career ON sl.skills_levels_id = csl_career.skills_levels_id").
+// 		Joins("JOIN INT371.careers AS ca ON csl_career.career_id = ca.career_id").
+// 		Where("ca.career_id = ?", careerID).
+// 		Count(&totalCount).Error; err != nil {
+// 		return Pagination{}, err
+// 	}
+
+// 	totalPages := int(totalCount)
+
+// 	pagination = Pagination{
+// 		Page:  page,
+// 		Total: totalPages,
+// 		Limit: limit,
+// 	}
+
+// 	return pagination, nil
+// }
+
+// // GetCoursesByCareerId retrieves courses based on the provided CareerID with pagination.
+// func GetCoursesByCareerId(db *gorm.DB, careerID, page, limit int, courses *[]CourseWithoutSkillLevels) (pagination Pagination, err error) {
+// 	offset := (page - 1) * limit
+// err = db.Preload("Organization").Preload("SkillsLevels.Skill").Preload("SkillsLevels.Careers").Preload("SkillsLevels").
+// 	Joins("JOIN courses_skills_levels ON courses.course_id = courses_skills_levels.course_id").
+// 	Joins("JOIN skills_levels ON courses_skills_levels.skills_levels_id = skills_levels.skills_levels_id").
+// 	Joins("JOIN careers_skills_levels ON skills_levels.skills_levels_id = careers_skills_levels.skills_levels_id").
+// 	Joins("JOIN careers ON careers_skills_levels.career_id = careers.career_id").
+// 	Where("careers.career_id = ?", careerID).
+// 	Offset(offset).Limit(limit).
+// 	Find(courses).Error
+// 	if err != nil {
+// 		return Pagination{}, err
+// 	}
+
+// 	// Count total courses for pagination
+// 	var totalCount int64
+// 	if err := db.Model(&CourseWithoutSkillLevels{}).
+// 		Joins("JOIN courses_skills_levels ON courses.course_id = courses_skills_levels.course_id").
+// 		Joins("JOIN skills_levels ON courses_skills_levels.skills_levels_id = skills_levels.skills_levels_id").
+// 		Joins("JOIN careers_skills_levels ON skills_levels.skills_levels_id = careers_skills_levels.skills_levels_id").
+// 		Joins("JOIN careers ON careers_skills_levels.career_id = careers.career_id").
+// 		Where("careers.career_id = ?", careerID).
+// 		Count(&totalCount).Error; err != nil {
+// 		return Pagination{}, err
+// 	}
+
+// 	totalPages := int(totalCount)
+
+// 	pagination = Pagination{
+// 		Page:  page,
+// 		Total: totalPages,
+// 		Limit: limit,
+// 	}
+
+// 	return pagination, nil
+// }
 
 // CreateCourse creates a new Course record in the database.
 func CreateCourse(db *gorm.DB, course *Course) (err error) {
@@ -241,7 +357,7 @@ func CreateCourse(db *gorm.DB, course *Course) (err error) {
 
 // GetCourseById retrieves a Course by its ID from the database.
 func GetCourseById(db *gorm.DB, course *Course, id int) (err error) {
-	err = db.Where("course_id = ?", id).Preload("Organization").Preload("SkillsLevels.Skill").Preload("SkillsLevels.Career").
+	err = db.Where("course_id = ?", id).Preload("Organization").Preload("Organization").Preload("SkillsLevels.Skill").Preload("SkillsLevels.Careers").Preload("SkillsLevels").
 		First(course).
 		Error
 	if err != nil {
@@ -254,40 +370,42 @@ func GetCourseById(db *gorm.DB, course *Course, id int) (err error) {
 func UpdateCourse(db *gorm.DB, updatedCourse *Course) (err error) {
 	// Begin a transaction
 	tx := db.Begin()
-	defer func() {
-		if r := recover(); r != nil {
-			tx.Rollback()
-		}
-	}()
-
 	// Check if the course record exists
 	existingCourse := &Course{}
-	err = tx.Preload("Organization").Preload("SkillsLevels.Skill").Preload("SkillsLevels.Career").First(existingCourse, "course_id = ?", updatedCourse.CourseID).Error
+	err = tx.Preload("Organization").Preload("SkillsLevels.Skill").Preload("SkillsLevels.Careers").Preload("SkillsLevels").First(existingCourse, "course_id = ?", updatedCourse.CourseID).Error
 	if err != nil {
 		tx.Rollback()
 		return err
 	}
-
-	// Delete all existing SkillsLevels records for the specified course
-	err = tx.Where("course_id = ?", existingCourse.CourseID).Delete(&SkillsLevels{}).Error
-	if err != nil {
-		tx.Rollback()
-		return err
-	}
-
-	// Commit the delete operation
-	if err := tx.Commit().Error; err != nil {
-		return err
-	}
-
-	// Begin a new transaction for the update operation
-	tx = db.Begin()
 
 	// Save the updated course
 	err = tx.Save(updatedCourse).Error
 	if err != nil {
 		tx.Rollback()
 		return err
+	}
+
+	// Clear existing associations within the transaction
+	err = tx.Model(existingCourse).Association("SkillsLevels").Clear()
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	// // Clear existing associations within the transaction
+	// err = tx.Model(existingCourse).Association("SkillsLevels.Careers").Clear()
+	// if err != nil {
+	// 	tx.Rollback()
+	// 	return err
+	// }
+
+	// Update existing skillslevels with the new one (if provided)
+	if len(updatedCourse.SkillsLevels) > 0 {
+		err = tx.Model(existingCourse).Association("SkillsLevels").Append(updatedCourse.SkillsLevels)
+		if err != nil {
+			tx.Rollback()
+			return err
+		}
 	}
 
 	// Commit the transaction for the update operation

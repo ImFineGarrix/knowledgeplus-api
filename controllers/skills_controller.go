@@ -3,11 +3,11 @@ package controllers
 import (
 	"errors"
 	"fmt"
-	"knowledgeplus/go-api/database"
 	"knowledgeplus/go-api/models"
 	"knowledgeplus/go-api/response"
 	"net/http"
 	"strconv"
+	"strings"
 
 	"github.com/gin-gonic/gin"
 	"github.com/go-playground/validator/v10"
@@ -15,13 +15,16 @@ import (
 )
 
 type SkillRepo struct {
-	Db *gorm.DB
+	Db      *gorm.DB
+	UserDb  *gorm.DB
+	AdminDb *gorm.DB
 }
 
-func NewSkillRepo() *SkillRepo {
-	db := database.InitDb()
+func NewSkillRepo(db *gorm.DB, userDb *gorm.DB, adminDb *gorm.DB) *SkillRepo {
 	db.AutoMigrate(&models.Skill{}, &models.Levels{})
-	return &SkillRepo{Db: db}
+	userDb.AutoMigrate(&models.Skill{}, &models.Levels{})
+	adminDb.AutoMigrate(&models.Skill{}, &models.Levels{})
+	return &SkillRepo{Db: db, UserDb: userDb, AdminDb: adminDb}
 }
 
 // GetSkills retrieves all Skill records from the database.
@@ -189,7 +192,7 @@ func (repository *SkillRepo) CreateSkill(c *gin.Context) {
 					Message: response.GetErrorMsg(fe),
 				}
 			}
-			c.JSON(http.StatusCreated, out)
+			c.JSON(http.StatusBadRequest, out)
 		} else {
 			c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 			return
@@ -198,7 +201,7 @@ func (repository *SkillRepo) CreateSkill(c *gin.Context) {
 	}
 
 	// Check if the name already exists in the database
-	var existingSkill models.Organizations
+	var existingSkill models.Skill
 	if err := repository.Db.Where("name = ?", Skill.Name).First(&existingSkill).Error; err == nil {
 		out := response.ErrorMsg{
 			Code:    http.StatusBadRequest,
@@ -234,7 +237,7 @@ func (repository *SkillRepo) UpdateSkill(c *gin.Context) {
 	var updatedSkill models.Skill
 
 	// Check if the skill record exists
-	err := models.GetSkillById(repository.Db, &updatedSkill, id)
+	err := repository.Db.First(&updatedSkill, id).Error
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			c.AbortWithStatusJSON(http.StatusNotFound, gin.H{"error": "Record not found!"})
@@ -257,7 +260,7 @@ func (repository *SkillRepo) UpdateSkill(c *gin.Context) {
 					Message: response.GetErrorMsg(fe),
 				}
 			}
-			c.JSON(http.StatusCreated, out)
+			c.JSON(http.StatusBadRequest, out)
 		} else {
 			c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 			return
@@ -266,8 +269,8 @@ func (repository *SkillRepo) UpdateSkill(c *gin.Context) {
 	}
 
 	// Check if the name already exists in the database
-	var existingSkill models.Organizations
-	if err := repository.Db.Where("name = ? AND skill_id != ?", updatedSkill.Name, updatedSkill.SkillID).First(&existingSkill).Error; err == nil {
+	var existingSkill models.Skill
+	if err := repository.Db.Where("name = ? AND skill_id != ?", updatedSkill.Name, id).First(&existingSkill).Error; err == nil {
 		out := response.ErrorMsg{
 			Code:    http.StatusBadRequest,
 			Field:   "Name",
@@ -289,11 +292,23 @@ func (repository *SkillRepo) UpdateSkill(c *gin.Context) {
 	}
 
 	// Update the skill record
-	err = models.UpdateSkill(repository.Db, &updatedSkill)
+	err = models.UpdateSkill(repository.Db, &updatedSkill, id)
 	if err != nil {
+		// Check for specific error and respond accordingly
+		if strings.Contains(err.Error(), "failed to delete existing skills level") {
+			out := response.ErrorMsg{
+				Code:    http.StatusBadRequest,
+				Field:   "Levels",
+				Message: "You cannot delete this skill level because it's being used in some course or career.",
+			}
+			c.JSON(http.StatusBadRequest, out)
+			return
+		}
 		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err})
 		return
 	}
+
+	c.JSON(http.StatusOK, updatedSkill)
 
 	c.JSON(http.StatusOK, updatedSkill)
 }
@@ -312,6 +327,20 @@ func (repository *SkillRepo) DeleteSkillById(c *gin.Context) {
 			return
 		}
 
+		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err})
+		return
+	}
+
+	// Delete associated records in courses_skills_levels table
+	err = repository.Db.Exec("DELETE FROM courses_skills_levels WHERE skills_levels_id IN (SELECT skills_levels_id FROM skills_levels WHERE skill_id = ?)", id).Error
+	if err != nil {
+		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err})
+		return
+	}
+
+	// Delete associated records in careers_skills_levels table
+	err = repository.Db.Exec("DELETE FROM careers_skills_levels WHERE skills_levels_id IN (SELECT skills_levels_id FROM skills_levels WHERE skill_id = ?)", id).Error
+	if err != nil {
 		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err})
 		return
 	}

@@ -179,11 +179,11 @@ func Updategroup(db *gorm.DB, updatedGroup *UpdateGroupModels) (err error) {
 		return err
 	}
 
-	err = tx.Model(&existingGroup).Association("Careers").Clear()
-	if err != nil {
-		tx.Rollback()
-		return err
-	}
+	// err = tx.Model(&existingGroup).Association("Careers").Clear()
+	// if err != nil {
+	// 	tx.Rollback()
+	// 	return err
+	// }
 
 	// Update existing sections with the new ones (if provided)
 	if len(updatedGroup.Sections) > 0 {
@@ -194,14 +194,14 @@ func Updategroup(db *gorm.DB, updatedGroup *UpdateGroupModels) (err error) {
 		}
 	}
 
-	// Update existing careers with the new ones (if provided)
-	if len(updatedGroup.Careers) > 0 {
-		err = tx.Model(&existingGroup).Association("Careers").Replace(updatedGroup.Careers)
-		if err != nil {
-			tx.Rollback()
-			return err
-		}
-	}
+	// // Update existing careers with the new ones (if provided)
+	// if len(updatedGroup.Careers) > 0 {
+	// 	err = tx.Model(&existingGroup).Association("Careers").Replace(updatedGroup.Careers)
+	// 	if err != nil {
+	// 		tx.Rollback()
+	// 		return err
+	// 	}
+	// }
 
 	// Commit the transaction
 	err = tx.Commit().Error

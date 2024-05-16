@@ -8,13 +8,13 @@ type Organizations struct {
 	OrganizationID int    `gorm:"column:organization_id; primaryKey;" json:"organization_id"`
 	Name           string `gorm:"column:name; not null; type:VARCHAR(255)" json:"name" binding:"required,max=255"`
 	Description    string `gorm:"column:description; default:NULL; type:LONGTEXT;" json:"description" binding:"max=1500"`
-	ImageUrl       string `gorm:"column:image_url; default:NULL; type:LONGTEXT;" json:"image_url" binding:"required,max=5000"`
+	ImageUrl       string `gorm:"column:image_url; default:NULL; type:LONGTEXT;" json:"image_url" binding:"required,max=2000"`
 }
 
 type UpdateOrganizationModels struct {
-	Name        string `gorm:"column:name; type:VARCHAR(255);" json:"name" binding:"max=255"`
+	Name        string `gorm:"column:name; type:VARCHAR(255);" json:"name" binding:"required,max=255"`
 	Description string `gorm:"column:description; default:NULL; type:LONGTEXT;" json:"description" binding:"max=1500"`
-	ImageUrl    string `gorm:"column:image_url; default:NULL; type:LONGTEXT;" json:"image_url" binding:"max=5000"`
+	ImageUrl    string `gorm:"column:image_url; default:NULL; type:LONGTEXT;" json:"image_url" binding:"max=2000"`
 }
 
 func (Organizations) TableName() string {
@@ -57,11 +57,22 @@ func UpdateOrganization(db *gorm.DB, id int, organization *UpdateOrganizationMod
 	return nil
 }
 
-// DeleteOrganization deletes an Organization record from the database by its ID.
-func DeleteOrganization(db *gorm.DB, id int) (err error) {
-	err = db.Where("organization_id = ?", id).Delete(&Organizations{}).Error
-	if err != nil {
+// UpdateOrganizationIDInCourses sets the organization_id in courses table to NULL for the given organization_id
+func UpdateOrganizationIDInCourses(db *gorm.DB, organizationID int) error {
+	return db.Exec("UPDATE courses SET organization_id = NULL WHERE organization_id = ?", organizationID).Error
+}
+
+// DeleteOrganization deletes the organization and sets organization_id to NULL in associated courses
+func DeleteOrganization(db *gorm.DB, organizationID int) error {
+	// Update organization_id to NULL in associated courses
+	if err := UpdateOrganizationIDInCourses(db, organizationID); err != nil {
 		return err
 	}
+
+	// Delete the organization
+	if err := db.Delete(&Organizations{}, organizationID).Error; err != nil {
+		return err
+	}
+
 	return nil
 }
